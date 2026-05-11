@@ -25,17 +25,17 @@ DISEASE_LABELS = [
 ]
 
 # ── Training hyperparameters ─────────────────────────────────────────────────
-BATCH_SIZE    = 32
+BATCH_SIZE    = 4 # default 32
 LEARNING_RATE = 1e-4
-NUM_EPOCHS    = 50
+NUM_EPOCHS    = 1 # 50
 PATIENCE      = 5       # early stopping patience (epochs without val AUC improvement)
-NUM_WORKERS   = 4
+NUM_WORKERS   = 0       # default 4 but 0 for more safety starting (şimdilik)
 PIN_MEMORY    = True
 
 # ── Dataset paths  (edit these before running) ───────────────────────────────
-DATA_CSV   = r"path/to/Data_Entry_2017.csv"   # NIH ChestX-ray14 labels CSV
-IMAGES_DIR = r"path/to/images/"               # flat directory containing all PNG files
-SPLIT_DIR  = r"path/to/splits/"               # where train/val/test CSV splits are saved
+DATA_CSV   = r"data/NIH Chest X-rays/Data_Entry_2017.csv"   # NIH ChestX-ray14 labels CSV
+IMAGES_DIR = r"data/NIH Chest X-rays"               # flat directory containing all PNG files
+SPLIT_DIR  = r"splits"             # where train/val/test CSV splits are saved
 
 # ── Experiment flags ─────────────────────────────────────────────────────────
 # Toggle these to select which experiment to run.

@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 import torch
 from sklearn.metrics import roc_auc_score
+from tqdm import tqdm
 
 import config
 from dataset import create_patient_splits, get_dataloaders
@@ -39,7 +40,7 @@ def train_one_epoch(
     model.train()
     total_loss = 0.0
 
-    for images, labels in loader:
+    for images, labels in tqdm(loader, desc="Train", leave=False, unit="batch"):
         images = images.to(device, non_blocking=True)
         labels = labels.to(device, non_blocking=True)
 
@@ -75,7 +76,7 @@ def validate(
     total_loss  = 0.0
 
     with torch.no_grad():
-        for images, labels in loader:
+        for images, labels in tqdm(loader, desc="Val  ", leave=False, unit="batch"):
             images = images.to(device, non_blocking=True)
             labels = labels.to(device, non_blocking=True)
             with torch.cuda.amp.autocast():
@@ -136,7 +137,7 @@ def main() -> None:
         model.parameters(), lr=config.LEARNING_RATE, weight_decay=1e-5
     )
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, mode="max", patience=3, factor=0.5, verbose=True
+        optimizer, mode="max", patience=3, factor=0.5
     )
     loss_fn = get_loss_fn(config.USE_ASYMMETRIC_LOSS)
     scaler  = torch.cuda.amp.GradScaler()
