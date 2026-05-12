@@ -40,7 +40,7 @@ def train_one_epoch(
     model.train()
     total_loss = 0.0
 
-    for images, labels in tqdm(loader, desc="Train", leave=False, unit="batch"):
+    for images, labels in tqdm(loader, desc="  Train", leave=False, unit="batch", dynamic_ncols=True, position=1):
         images = images.to(device, non_blocking=True)
         labels = labels.to(device, non_blocking=True)
 
@@ -76,7 +76,7 @@ def validate(
     total_loss  = 0.0
 
     with torch.no_grad():
-        for images, labels in tqdm(loader, desc="Val  ", leave=False, unit="batch"):
+        for images, labels in tqdm(loader, desc="  Val  ", leave=False, unit="batch", dynamic_ncols=True, position=1):
             images = images.to(device, non_blocking=True)
             labels = labels.to(device, non_blocking=True)
             with torch.cuda.amp.autocast():
@@ -156,7 +156,14 @@ def main() -> None:
     per_class_auc_history = []
 
     # ── Epoch loop ────────────────────────────────────────────────────────────
-    for epoch in range(1, config.NUM_EPOCHS + 1):
+    epoch_bar = tqdm(
+        range(1, config.NUM_EPOCHS + 1),
+        desc="Epochs",
+        unit="epoch",
+        dynamic_ncols=True,
+        position=0,
+    )
+    for epoch in epoch_bar:
         train_loss = train_one_epoch(model, train_loader, optimizer, loss_fn, DEVICE, scaler)
         val_loss, avg_auc, per_class_auc = validate(model, val_loader, loss_fn, DEVICE, config.DISEASE_LABELS)
 
@@ -167,56 +174,50 @@ def main() -> None:
         history["val_auc"].append(avg_auc)
         per_class_auc_history.append(per_class_auc)
 
-        # ── Console logging ───────────────────────────────────────────────────
-        print(
-            f"Epoch {epoch:03d}/{config.NUM_EPOCHS} | "
-            f"Train Loss: {train_loss:.4f} | "
-            f"Val Loss: {val_loss:.4f} | "
-            f"Val Avg AUC: {avg_auc:.4f}"
-        )
-        # Print per-class AUC table every 5 epochs and on the final epoch
-        if epoch % 5 == 0 or epoch == config.NUM_EPOCHS:
-            print(f"\n  {'Class':<22} {'Val AUC':>8}")
-            print(f"  {'-'*32}")
-            for cls, auc in per_class_auc.items():
-                auc_str = f"{auc:.4f}" if not np.isnan(auc) else "  N/A "
-                print(f"  {cls:<22} {auc_str:>8}")
-            print()
-
         # ── Checkpoint saving ─────────────────────────────────────────────────
+        ckpt_state = {
+            "epoch":                epoch,
+            "model_state_dict":     model.state_dict(),
+            "optimizer_state_dict": optimizer.state_dict(),
+            "val_auc":              avg_auc,
+            "exp_name":             exp_name,
+        }
         last_ckpt_path = os.path.join(config.CHECKPOINTS_DIR, f"{exp_name}_last.pth")
-        save_checkpoint(
-            {
-                "epoch":                epoch,
-                "model_state_dict":     model.state_dict(),
-                "optimizer_state_dict": optimizer.state_dict(),
-                "val_auc":              avg_auc,
-                "exp_name":             exp_name,
-            },
-            last_ckpt_path,
-        )
+        save_checkpoint(ckpt_state, last_ckpt_path)
 
+        ckpt_tag = ""
         if avg_auc > best_val_auc:
             best_val_auc     = avg_auc
             best_epoch       = epoch
             patience_counter = 0
             best_ckpt_path   = os.path.join(config.CHECKPOINTS_DIR, f"{exp_name}_best.pth")
-            save_checkpoint(
-                {
-                    "epoch":                epoch,
-                    "model_state_dict":     model.state_dict(),
-                    "optimizer_state_dict": optimizer.state_dict(),
-                    "val_auc":              avg_auc,
-                    "exp_name":             exp_name,
-                },
-                best_ckpt_path,
-            )
-            print(f"  ✓ New best checkpoint saved (Val AUC: {best_val_auc:.4f})")
+            save_checkpoint(ckpt_state, best_ckpt_path)
+            ckpt_tag = " [best saved]"
         else:
             patience_counter += 1
-            if patience_counter >= config.PATIENCE:
-                print(f"\nEarly stopping triggered at epoch {epoch}.")
-                break
+
+        # ── Epoch summary line ────────────────────────────────────────────────
+        tqdm.write(
+            f"Ep {epoch:03d}/{config.NUM_EPOCHS} | "
+            f"TrainL {train_loss:.4f} | ValL {val_loss:.4f} | "
+            f"AUC {avg_auc:.4f} | Best {best_val_auc:.4f} @ep{best_epoch:03d}"
+            + ckpt_tag
+        )
+
+        # Per-class AUC table every 5 epochs and on the final epoch
+        if epoch % 5 == 0 or epoch == config.NUM_EPOCHS:
+            tqdm.write(f"\n  {'Class':<22} {'Val AUC':>8}")
+            tqdm.write(f"  {'-'*32}")
+            for cls, auc in per_class_auc.items():
+                auc_str = f"{auc:.4f}" if not np.isnan(auc) else "  N/A "
+                tqdm.write(f"  {cls:<22} {auc_str:>8}")
+            tqdm.write("")
+
+        epoch_bar.set_postfix(auc=f"{avg_auc:.4f}", best=f"{best_val_auc:.4f}", refresh=False)
+
+        if patience_counter >= config.PATIENCE:
+            tqdm.write(f"\nEarly stopping triggered at epoch {epoch}.")
+            break
 
     # ── Save all training outputs ──────────────────────────────────────────────
 
