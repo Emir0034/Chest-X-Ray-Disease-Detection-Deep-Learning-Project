@@ -25,11 +25,11 @@ DISEASE_LABELS = [
 ]
 
 # ── Training hyperparameters ─────────────────────────────────────────────────
-BATCH_SIZE    = 4 # default 32
+BATCH_SIZE    = 64 # default 32
 LEARNING_RATE = 1e-4
-NUM_EPOCHS    = 1 # 50
-PATIENCE      = 5       # early stopping patience (epochs without val AUC improvement)
-NUM_WORKERS   = 0       # default 4 but 0 for more safety starting (şimdilik)
+NUM_EPOCHS    = 50 # 50
+PATIENCE      = 7       # early stopping patience (epochs without val AUC improvement)
+NUM_WORKERS   = 12      # default 4 but 0 for more safety starting (şimdilik)
 PIN_MEMORY    = True
 
 # ── Dataset paths  (edit these before running) ───────────────────────────────
