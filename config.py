@@ -39,8 +39,9 @@ SPLIT_DIR  = r"splits"             # where train/val/test CSV splits are saved
 
 # ── Experiment flags ─────────────────────────────────────────────────────────
 # Toggle these to select which experiment to run.
-USE_CLAHE           = False   # Experiment 2+: CLAHE contrast enhancement
+USE_CLAHE           = True    # Experiment 2+: CLAHE contrast enhancement
 USE_CBAM            = False   # Experiment 3+: CBAM attention module
+CBAM_PLACEMENT      = "block4"   # "block4" | "block34" | "block1234" — ignored when USE_CBAM=False
 USE_ASYMMETRIC_LOSS = False   # Experiment 4:  Asymmetric Loss (replaces BCE)
 
 # ── Results directories ──────────────────────────────────────────────────────
@@ -58,5 +59,6 @@ def get_experiment_name() -> str:
         parts.append("clahe")
     if USE_CBAM:
         parts.append("cbam")
+        parts.append(CBAM_PLACEMENT)   # e.g. "block4", "block34", "block1234"
     parts.append("asl" if USE_ASYMMETRIC_LOSS else "bce")
     return "_".join(parts)
