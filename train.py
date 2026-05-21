@@ -162,6 +162,8 @@ def main() -> None:
         if getattr(config, "FAAR_WEIGHT_MODE", "inverse") == "cap":
             print(f"FAAR cap   : {getattr(config, 'FAAR_CAP_MAX', 3.0)}")
         print(f"FAAR alpha : init={getattr(config, 'FAAR_ALPHA_INIT', 0.0)}")
+    print(f"Optimizer  : {getattr(config, 'OPTIMIZER_NAME', 'adam').upper()}")
+    print(f"Weight Decay: {getattr(config, 'WEIGHT_DECAY', 1e-5)}")
     print(f"{'='*60}\n")
 
     # ── Data ─────────────────────────────────────────────────────────────────
@@ -192,9 +194,18 @@ def main() -> None:
         model = build_model(config, faar_freq_weights=fw).to(DEVICE)
     else:
         model = build_model(config).to(DEVICE)
-    optimizer = torch.optim.Adam(
-        model.parameters(), lr=config.LEARNING_RATE, weight_decay=1e-5
-    )
+    _opt_name = getattr(config, "OPTIMIZER_NAME", "adam").lower()
+    _wd       = getattr(config, "WEIGHT_DECAY", 1e-5)
+    if _opt_name == "adam":
+        optimizer = torch.optim.Adam(
+            model.parameters(), lr=config.LEARNING_RATE, weight_decay=_wd,
+        )
+    elif _opt_name == "adamw":
+        optimizer = torch.optim.AdamW(
+            model.parameters(), lr=config.LEARNING_RATE, weight_decay=_wd,
+        )
+    else:
+        raise ValueError(f"Unknown optimizer: {config.OPTIMIZER_NAME!r}")
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer, mode="max", patience=3, factor=0.5
     )

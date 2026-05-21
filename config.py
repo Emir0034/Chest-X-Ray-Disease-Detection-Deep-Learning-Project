@@ -26,11 +26,14 @@ DISEASE_LABELS = [
 
 # ── Training hyperparameters ─────────────────────────────────────────────────
 BATCH_SIZE    = 64 # default 32
-LEARNING_RATE = 1e-3 # normalde 1e-4
+LEARNING_RATE = 1e-4 # normalde 1e-4
 NUM_EPOCHS    = 50 # 50
-PATIENCE      = 10       # early stopping patience (epochs without val AUC improvement) 
+PATIENCE      = 7       # early stopping patience (epochs without val AUC improvement)
 NUM_WORKERS   = 12      # default 4 but 0 for more safety starting (şimdilik)
 PIN_MEMORY    = True
+OPTIMIZER_NAME    = "adamw"  # "adam" or "adamw"
+WEIGHT_DECAY      = 1e-4     # normalde 1e-5
+EXPERIMENT_SUFFIX = "wd1e4"       # optional suffix, e.g. "wd1e4" or "lr5e5"
 
 # ── Dataset paths  (edit these before running) ───────────────────────────────
 DATA_CSV   = r"data/NIH Chest X-rays/Data_Entry_2017.csv"   # NIH ChestX-ray14 labels CSV
@@ -40,7 +43,7 @@ SPLIT_DIR  = r"splits"             # where train/val/test CSV splits are saved
 # ── Experiment flags ─────────────────────────────────────────────────────────
 # Toggle these to select which experiment to run.
 USE_CLAHE           = False    # Experiment 2+: CLAHE contrast enhancement
-USE_CBAM            = False  # Experiment 3+: CBAM attention module
+USE_CBAM            = True  # Experiment 3+: CBAM attention module
 CBAM_PLACEMENT      = "block34"   # "block4" | "block34" | "block1234" — ignored when USE_CBAM=False
 USE_ASYMMETRIC_LOSS = False  # Experiment 4:  Asymmetric Loss (replaces BCE)
 ASL_GAMMA_NEG   = 2.0        # Focusing parameter for negative samples
@@ -91,6 +94,10 @@ def get_experiment_name() -> str:
             parts.append("faar_sqrtinv")
         else:
             raise ValueError(f"Unknown FAAR_WEIGHT_MODE: {FAAR_WEIGHT_MODE!r}")
+    if OPTIMIZER_NAME.lower() == "adamw":
+        parts.append("adamw")
+    if EXPERIMENT_SUFFIX:
+        parts.append(EXPERIMENT_SUFFIX)
     return "_".join(parts)
 
 

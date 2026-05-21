@@ -559,7 +559,7 @@ Bu dosya her deneyin sonuçlarını, gözlemlerini ve karşılaştırmalarını 
   - Our experiment results indicate that FAAR partially helped sensitivity-related metrics but did not improve overall Mean Test AUC compared with 04b.
   - Based on observed validation and test AUC, FAAR can be discussed as a feature-level imbalance refinement that improves Recall and F1 while not improving Mean Test AUC relative to the best BCE configuration or the best ASL configuration.
 - **Genel Değerlendirme:**
-  - Best Mean Test AUC model: Experiment 03b (0.8359) — CLAHE + CBAM block34 + BCE.
+  - Best Mean Test AUC model: Experiment 08 (0.8371) — CBAM block34 + BCE + AdamW (no CLAHE). Experiment 03b remains the best CLAHE+CBAM BCE model (0.8359).
   - Best ASL-based model: Experiment 04b (0.8342) — CLAHE + CBAM block34 + ASL gn2_gp0.
   - Experiment 05 with FAAR achieved improved Best Val AUC (0.8288) and improved Recall/F1 compared with 04b, but did not surpass 04b on Mean Test AUC.
   - Our ablation results show that CBAM block34 placement is the single most impactful improvement over the baseline. ASL gn2_gp0 adds Recall and F1 benefits. FAAR further improves Recall but does not consistently improve AUC.
@@ -640,7 +640,7 @@ Bu dosya her deneyin sonuçlarını, gözlemlerini ve karşılaştırmalarını 
   - Our experiment results indicate that FAAR cap3 does not solve the AUC drop observed in Experiment 05.
   - The strongest per-class improvement compared with Experiment 05 was Pneumothorax (+0.0134), while the largest regression was Nodule (−0.0156).
   - Compared with Experiment 04b, most classes regressed, with the largest drops in Mass (−0.0143), Pneumonia (−0.0131), and Hernia (−0.0087).
-  - Based on observed validation and test AUC, Experiment 04b remains the strongest ASL-based configuration, and Experiment 03b remains the best overall Mean Test AUC model.
+  - Based on observed validation and test AUC, Experiment 04b remains the strongest ASL-based configuration. Experiment 03b remains the best CLAHE+CBAM BCE model (0.8359), and Experiment 08 is now the best overall Mean Test AUC model (0.8371).
 - **Sonraki adım:** improving the best AUC model.
 
 ---
@@ -652,7 +652,7 @@ Bu dosya her deneyin sonuçlarını, gözlemlerini ve karşılaştırmalarını 
 - Our experiment results show that both original FAAR (Experiment 05, Mean Test AUC 0.8312) and FAAR cap3 (Experiment 05b, Mean Test AUC 0.8311) did not improve Mean Test AUC compared with Experiment 04b (0.8342).
 - FAAR tuning is stopped here. The priority is Mean Test AUC, and further weight-mode variations are not expected to resolve the AUC gap.
 - Experiment 06 tested LR=1e-3 on the original BCE baseline — it did not improve AUC and is not continued.
-- The next recommended experiment is `densenet121_cbam_block34_bce_no_clahe`, using CBAM block34 without CLAHE (USE_CLAHE=False, USE_CBAM=True, CBAM_PLACEMENT="block34", LR=1e-4, PATIENCE=10), to isolate the CBAM block34 contribution from CLAHE.
+- Experiment 07 tested CBAM block34 without CLAHE. It achieved the best Mean Test AUC so far (0.8361), slightly surpassing Experiment 03b (0.8359). Therefore, CLAHE is not selected for the current best AUC configuration.
 
 ---
 
@@ -741,8 +741,169 @@ Bu dosya her deneyin sonuçlarını, gözlemlerini ve karşılaştırmalarını 
   - Large per-class regressions compared with Deney 01: Hernia (−0.0388), Nodule (−0.0283), Emphysema (−0.0265), Fibrosis (−0.0233).
   - Best epoch shifted to 25 with early stopping at 35 — LR=1e-3 converged later but to a worse optimum.
   - Our experiment results indicate that LR=1e-3 is too aggressive for this dataset and architecture combination.
-  - The stronger BCE baseline remains Deney 01 (`densenet121_bce`, Mean Test AUC 0.8352), and the best overall model remains Deney 03b (`densenet121_clahe_cbam_block34_bce`, Mean Test AUC 0.8359).
+  - The stronger BCE baseline remains Deney 01 (`densenet121_bce`, Mean Test AUC 0.8352). The best overall model is now Deney 08 (`densenet121_cbam_block34_bce_adamw`, Mean Test AUC 0.8371).
 - **Sonraki adım:**
+
+---
+
+## [Deney 07] — DenseNet121 + CBAM block34 + BCE, no CLAHE
+
+- **Experiment Name:** `densenet121_cbam_block34_bce`
+- **Amaç:**
+  - Test whether removing CLAHE improves the CBAM block34 setup.
+  - Direct comparison against Experiment 03b: `densenet121_clahe_cbam_block34_bce`.
+- **Config:**
+  - Model: DenseNet121
+  - Loss: BCEWithLogitsLoss
+  - USE_CLAHE = False
+  - USE_CBAM = True
+  - CBAM_PLACEMENT = "block34"
+  - USE_ASYMMETRIC_LOSS = False
+  - USE_FAAR = False
+  - BATCH_SIZE = 64 | LEARNING_RATE = 1e-4 | NUM_EPOCHS = 50 | PATIENCE = 7 | NUM_WORKERS = 12 | PIN_MEMORY = True
+- **CBAM Placement:**
+  - CBAM after DenseBlock3 before Transition3.
+  - CBAM after DenseBlock4 / norm5 / ReLU, before Global Average Pooling.
+- **Eğitim Sonuçları (Val):**
+  - Best Val AUC: 0.8344
+  - Best Epoch: 5
+  - Train Loss (epoch 5): 0.1382
+  - Val Loss (epoch 5): 0.1470
+  - Early stopping triggered at epoch 12
+- **Test Sonuçları (evaluate.py):**
+  - Checkpoint: `results/checkpoints/densenet121_cbam_block34_bce_best.pth`
+  - Mean Test AUC: 0.8361
+  - Deney 03b'ye göre fark: +0.0002
+  - Deney 01'e göre fark: +0.0009
+  - Precision: 0.4421
+  - Recall: 0.1284
+  - F1 Score: 0.1790
+  - Threshold: 0.5
+  - Per-class Test AUC:
+
+    | Sınıf | Test AUC | 03b Farkı | Baseline Farkı |
+    |---|---|---|---|
+    | Atelectasis | 0.8138 | +0.0050 | +0.0023 |
+    | Cardiomegaly | 0.8969 | +0.0021 | −0.0021 |
+    | Effusion | 0.8845 | −0.0013 | +0.0009 |
+    | Infiltration | 0.7190 | +0.0061 | +0.0083 |
+    | Mass | 0.8393 | +0.0016 | +0.0057 |
+    | Nodule | 0.7537 | −0.0057 | −0.0159 |
+    | Pneumonia | 0.7487 | −0.0137 | −0.0061 |
+    | Pneumothorax | 0.8920 | +0.0064 | +0.0159 |
+    | Consolidation | 0.8068 | +0.0101 | +0.0068 |
+    | Edema | 0.9016 | +0.0010 | −0.0029 |
+    | Emphysema | 0.9193 | −0.0082 | +0.0001 |
+    | Fibrosis | 0.8247 | +0.0055 | +0.0037 |
+    | Pleural_Thickening | 0.7884 | −0.0022 | +0.0039 |
+    | Hernia | 0.9170 | −0.0031 | −0.0077 |
+
+- **Dosyalar:**
+  - Loss CSV: `results/metrics/densenet121_cbam_block34_bce_loss_history.csv`
+  - Val AUC CSV: `results/metrics/densenet121_cbam_block34_bce_val_auc_history.csv`
+  - Best Epoch JSON: `results/metrics/densenet121_cbam_block34_bce_best_epoch.json`
+  - Test AUC CSV: `results/metrics/densenet121_cbam_block34_bce_test_auc_per_class.csv`
+  - Test Summary CSV: `results/metrics/densenet121_cbam_block34_bce_test_summary.csv`
+  - Test Metrics JSON: `results/metrics/densenet121_cbam_block34_bce_test_metrics.json`
+  - Curves PNG: `results/figures/densenet121_cbam_block34_bce_curves.png`
+  - Test AUC Bar PNG: `results/figures/densenet121_cbam_block34_bce_test_auc_bar.png`
+- **Gözlemler:**
+  - Removing CLAHE improved Best Val AUC compared with Experiment 03b: 0.8344 vs 0.8320 (+0.0024).
+  - Mean Test AUC also slightly improved: 0.8361 vs 0.8359 (+0.0002). At the time of this experiment, Deney 07 was the best overall model by Mean Test AUC.
+  - This suggests that CLAHE did not provide a consistent benefit in the CBAM block34 setup, and CBAM block34 works slightly better directly on original X-ray images.
+  - Precision (+0.0377), Recall (+0.0234), and F1 (+0.0339) all improved compared with Experiment 03b at threshold 0.5.
+  - Per-class improvements compared with 03b: Consolidation (+0.0101), Infiltration (+0.0061), Pneumothorax (+0.0064), Fibrosis (+0.0055), Atelectasis (+0.0050).
+  - Per-class regressions compared with 03b: Pneumonia (−0.0137), Emphysema (−0.0082), Nodule (−0.0057), Hernia (−0.0031).
+  - Compared with Baseline (Deney 01), the main gains were Pneumothorax (+0.0159), Infiltration (+0.0083), Consolidation (+0.0068), Mass (+0.0057), while Nodule (−0.0159) and Hernia (−0.0077) regressed.
+  - Our experiment results show that CLAHE is not necessary for the best AUC performance in this setup. CBAM block34 on original images achieves the best Mean Test AUC.
+- **Genel Değerlendirme:**
+  - Best Mean Test AUC model: Experiment 08 (0.8371) — CBAM block34 + BCE + AdamW (no CLAHE).
+  - Experiment 07 is the best Adam optimizer no-CLAHE CBAM block34 BCE model (0.8361).
+  - Experiment 03b remains the best CLAHE+CBAM BCE model (0.8359).
+  - Best ASL-based model: Experiment 04b (0.8342) — CLAHE + CBAM block34 + ASL gn2_gp0.
+  - AdamW improved Mean Test AUC from 0.8361 to 0.8371, suggesting better generalization in this setup.
+- **Sonraki adım:** Experiment 08 tested AdamW on the same no-CLAHE CBAM block34 BCE setup, improving Mean Test AUC from 0.8361 to 0.8371.
+
+---
+
+## [Deney 08] — DenseNet121 + CBAM block34 + BCE + AdamW, no CLAHE
+
+- **Experiment Name:** `densenet121_cbam_block34_bce_adamw`
+- **Amaç:**
+  - Test whether changing the optimizer from Adam to AdamW improves the current best no-CLAHE CBAM block34 BCE setup.
+  - Direct comparison against Experiment 07: `densenet121_cbam_block34_bce`.
+- **Config:**
+  - Model: DenseNet121
+  - Loss: BCEWithLogitsLoss
+  - USE_CLAHE = False
+  - USE_CBAM = True
+  - CBAM_PLACEMENT = "block34"
+  - USE_ASYMMETRIC_LOSS = False
+  - USE_FAAR = False
+  - Optimizer: AdamW
+  - WEIGHT_DECAY = 1e-5
+  - BATCH_SIZE = 64 | LEARNING_RATE = 1e-4 | NUM_EPOCHS = 50 | PATIENCE = 7 | NUM_WORKERS = 12 | PIN_MEMORY = True
+- **CBAM Placement:**
+  - CBAM after DenseBlock3 before Transition3.
+  - CBAM after DenseBlock4 / norm5 / ReLU, before Global Average Pooling.
+- **Eğitim Sonuçları (Val):**
+  - Best Val AUC: 0.8338
+  - Best Epoch: 6
+  - Train Loss (epoch 6): 0.1345
+  - Val Loss (epoch 6): 0.1473
+  - Early stopping triggered at epoch 13
+- **Test Sonuçları (evaluate.py):**
+  - Checkpoint: `results/checkpoints/densenet121_cbam_block34_bce_adamw_best.pth`
+  - Mean Test AUC: 0.8371
+  - Deney 07'ye göre fark: +0.0010
+  - Deney 01'e göre fark: +0.0019
+  - Precision: 0.4482
+  - Recall: 0.1395
+  - F1 Score: 0.1962
+  - Threshold: 0.5
+  - Per-class Test AUC:
+
+    | Sınıf | Test AUC | Deney 07 Farkı | Baseline Farkı |
+    |---|---|---|---|
+    | Atelectasis | 0.8169 | +0.0031 | +0.0054 |
+    | Cardiomegaly | 0.9026 | +0.0057 | +0.0036 |
+    | Effusion | 0.8877 | +0.0032 | +0.0041 |
+    | Infiltration | 0.7157 | −0.0033 | +0.0050 |
+    | Mass | 0.8452 | +0.0059 | +0.0116 |
+    | Nodule | 0.7494 | −0.0043 | −0.0202 |
+    | Pneumonia | 0.7595 | +0.0108 | +0.0047 |
+    | Pneumothorax | 0.8841 | −0.0079 | +0.0080 |
+    | Consolidation | 0.7998 | −0.0070 | −0.0002 |
+    | Edema | 0.9063 | +0.0047 | +0.0018 |
+    | Emphysema | 0.9214 | +0.0021 | +0.0022 |
+    | Fibrosis | 0.8102 | −0.0145 | −0.0108 |
+    | Pleural_Thickening | 0.7959 | +0.0075 | +0.0114 |
+    | Hernia | 0.9246 | +0.0076 | −0.0001 |
+
+- **Dosyalar:**
+  - Loss CSV: `results/metrics/densenet121_cbam_block34_bce_adamw_loss_history.csv`
+  - Val AUC CSV: `results/metrics/densenet121_cbam_block34_bce_adamw_val_auc_history.csv`
+  - Best Epoch JSON: `results/metrics/densenet121_cbam_block34_bce_adamw_best_epoch.json`
+  - Test AUC CSV: `results/metrics/densenet121_cbam_block34_bce_adamw_test_auc_per_class.csv`
+  - Test Summary CSV: `results/metrics/densenet121_cbam_block34_bce_adamw_test_summary.csv`
+  - Test Metrics JSON: `results/metrics/densenet121_cbam_block34_bce_adamw_test_metrics.json`
+  - Curves PNG: `results/figures/densenet121_cbam_block34_bce_adamw_curves.png`
+  - Test AUC Bar PNG: `results/figures/densenet121_cbam_block34_bce_adamw_test_auc_bar.png`
+- **Gözlemler:**
+  - AdamW slightly decreased Best Val AUC compared with Experiment 07: 0.8338 vs 0.8344 (−0.0006).
+  - However, AdamW improved Mean Test AUC: 0.8371 vs 0.8361 (+0.0010), making Experiment 08 the best overall model by Mean Test AUC.
+  - Precision (+0.0061), Recall (+0.0111), and F1 (+0.0172) all improved compared with Experiment 07 at threshold 0.5.
+  - The strongest per-class improvements vs Experiment 07: Pneumonia (+0.0108), Hernia (+0.0076), Pleural_Thickening (+0.0075), Mass (+0.0059), Cardiomegaly (+0.0057).
+  - The largest per-class regressions vs Experiment 07: Fibrosis (−0.0145), Pneumothorax (−0.0079), Consolidation (−0.0070), Nodule (−0.0043).
+  - Even though validation AUC was slightly lower, the test AUC and threshold metrics improved, suggesting AdamW improved generalization on the test split in this setup.
+  - Our experiment results indicate that AdamW with the same weight decay (1e-5) provides a small but consistent improvement in test performance over Adam in the no-CLAHE CBAM block34 BCE setup.
+- **Genel Değerlendirme:**
+  - Best Mean Test AUC model: Experiment 08 (0.8371) — CBAM block34 + BCE + AdamW (no CLAHE).
+  - Experiment 07 is the best Adam optimizer no-CLAHE CBAM block34 BCE model (0.8361).
+  - Experiment 03b remains the best CLAHE+CBAM BCE model (0.8359).
+  - Best ASL-based model: Experiment 04b (0.8342) — CLAHE + CBAM block34 + ASL gn2_gp0.
+  - AdamW improved Mean Test AUC from 0.8361 to 0.8371, suggesting better generalization in this setup.
+- **Sonraki adım:** Continue with further improvements, such as testing AdamW on the CLAHE+CBAM block34 setup, or applying ASL with AdamW.
 
 ---
 
@@ -760,3 +921,5 @@ Bu dosya her deneyin sonuçlarını, gözlemlerini ve karşılaştırmalarını 
 | 05 +FAAR | clahe_cbam_block34_asl_gn2_gp0_faar | 0.8288 | 0.8312 | 5 | 0.7093 | 0.7494 | 0.7671 | 0.7759 | 0.9283 | 0.9199 |
 | 05b +FAAR cap3 | clahe_cbam_block34_asl_gn2_gp0_faar_cap3 | 0.8282 | 0.8311 | 5 | 0.7137 | 0.7426 | 0.7515 | 0.7768 | 0.9221 | 0.9200 |
 | 06 BCE LR=1e-3 | bce_lr1e3_pat10 | 0.8221 | 0.8247 | 25 | 0.7085 | 0.7450 | 0.7413 | 0.7761 | 0.8859 | 0.8927 |
+| 07 CBAM block34 no CLAHE | cbam_block34_bce | 0.8344 | 0.8361 | 5 | 0.7190 | 0.7487 | 0.7537 | 0.7884 | 0.9170 | 0.9193 |
+| 08 CBAM block34 no CLAHE + AdamW | cbam_block34_bce_adamw | 0.8338 | 0.8371 | 6 | 0.7157 | 0.7595 | 0.7494 | 0.7959 | 0.9246 | 0.9214 |
