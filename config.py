@@ -32,7 +32,7 @@ PATIENCE      = 7       # early stopping patience (epochs without val AUC improv
 NUM_WORKERS   = 12      # default 4 but 0 for more safety starting (şimdilik)
 PIN_MEMORY    = True
 OPTIMIZER_NAME    = "adamw"  # "adam" or "adamw"
-WEIGHT_DECAY      = 1e-4     # normalde 1e-5
+WEIGHT_DECAY      = 1e-5    # normalde 1e-5
 EXPERIMENT_SUFFIX = "wd1e4"       # optional suffix, e.g. "wd1e4" or "lr5e5"
 
 # ── Dataset paths  (edit these before running) ───────────────────────────────
