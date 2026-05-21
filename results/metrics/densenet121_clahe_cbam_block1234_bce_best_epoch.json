@@ -1,0 +1,5 @@
+{
+  "exp_name": "densenet121_clahe_cbam_block1234_bce",
+  "best_epoch": 5,
+  "best_val_auc": 0.8311188588830692
+}

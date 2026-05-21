@@ -1,0 +1,2 @@
+exp_name,avg_auc,precision,recall,f1,threshold
+densenet121_clahe_cbam_block4_bce,0.8323445301644004,0.4465448275162972,0.1274150210014888,0.1864247902796397,0.5

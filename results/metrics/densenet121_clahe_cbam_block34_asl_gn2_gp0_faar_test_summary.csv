@@ -1,0 +1,2 @@
+exp_name,avg_auc,precision,recall,f1,threshold
+densenet121_clahe_cbam_block34_asl_gn2_gp0_faar,0.8312255248256702,0.37931343983890453,0.25669973828510495,0.2788038771466493,0.5

@@ -5,6 +5,7 @@ from torchvision import models
 from torchvision.models import DenseNet121_Weights
 
 from cbam import CBAM
+from faar import FAAR
 
 
 class ChestXRayModel(nn.Module):
@@ -30,10 +31,13 @@ class ChestXRayModel(nn.Module):
     raise RuntimeError during backward.
 
     Args:
-        num_classes:    Number of output classes (14 for NIH ChestX-ray14).
-        use_cbam:       Insert CBAM modules (placement controlled by cbam_placement).
-        cbam_placement: One of "block4", "block34", "block1234". Ignored when use_cbam=False.
-        pretrained:     Load ImageNet weights for the DenseNet121 backbone.
+        num_classes:       Number of output classes (14 for NIH ChestX-ray14).
+        use_cbam:          Insert CBAM modules (placement controlled by cbam_placement).
+        cbam_placement:    One of "block4", "block34", "block1234". Ignored when use_cbam=False.
+        pretrained:        Load ImageNet weights for the DenseNet121 backbone.
+        use_faar:          Insert FAAR after the final CBAM / before GAP.
+        faar_freq_weights: Pre-computed inverse-frequency tensor, required when use_faar=True.
+        faar_alpha_init:   Initial value for the FAAR residual scale (default 0.0 → identity).
     """
 
     def __init__(
@@ -42,6 +46,9 @@ class ChestXRayModel(nn.Module):
         use_cbam: bool = False,
         cbam_placement: str = "block4",
         pretrained: bool = True,
+        use_faar: bool = False,
+        faar_freq_weights=None,
+        faar_alpha_init: float = 0.0,
     ):
         super().__init__()
         weights = DenseNet121_Weights.IMAGENET1K_V1 if pretrained else None
@@ -64,6 +71,17 @@ class ChestXRayModel(nn.Module):
         self.cbam_block2 = CBAM(512)  if b2 else None
         self.cbam_block3 = CBAM(1024) if b3 else None
         self.cbam_block4 = CBAM(1024) if b4 else None
+
+        self.faar = (
+            FAAR(
+                num_classes=num_classes,
+                num_channels=1024,
+                freq_weights=faar_freq_weights,
+                alpha_init=faar_alpha_init,
+            )
+            if use_faar
+            else None
+        )
 
         self.classifier = nn.Linear(1024, num_classes)
 
@@ -101,16 +119,21 @@ class ChestXRayModel(nn.Module):
         if self.cbam_block4 is not None:
             x = self.cbam_block4(x)
 
+        if self.faar is not None:
+            x = self.faar(x)
+
         x = F.adaptive_avg_pool2d(x, (1, 1))       # (B, 1024, 1, 1)
         x = torch.flatten(x, 1)                    # (B, 1024)
         return self.classifier(x)                  # (B, 14)  raw logits
 
 
-def build_model(cfg) -> ChestXRayModel:
+def build_model(cfg, faar_freq_weights=None) -> ChestXRayModel:
     """Build a ChestXRayModel from config module settings.
 
     Args:
-        cfg: The config module (import config; build_model(config)).
+        cfg:               The config module (import config; build_model(config)).
+        faar_freq_weights: Pre-computed inverse-frequency tensor for FAAR.
+                           Required when cfg.USE_FAAR=True; ignored otherwise.
 
     Returns:
         ChestXRayModel instance (not yet moved to device).
@@ -120,4 +143,7 @@ def build_model(cfg) -> ChestXRayModel:
         use_cbam=cfg.USE_CBAM,
         cbam_placement=cfg.CBAM_PLACEMENT,
         pretrained=True,
+        use_faar=getattr(cfg, "USE_FAAR", False),
+        faar_freq_weights=faar_freq_weights,
+        faar_alpha_init=getattr(cfg, "FAAR_ALPHA_INIT", 0.0),
     )

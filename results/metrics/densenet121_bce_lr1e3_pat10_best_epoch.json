@@ -1,0 +1,5 @@
+{
+  "exp_name": "densenet121_bce_lr1e3_pat10",
+  "best_epoch": 25,
+  "best_val_auc": 0.8220556869879129
+}

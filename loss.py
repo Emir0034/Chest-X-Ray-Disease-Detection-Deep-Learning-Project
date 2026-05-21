@@ -71,7 +71,12 @@ class AsymmetricLoss(nn.Module):
         return -loss.sum(dim=1).mean()
 
 
-def get_loss_fn(use_asymmetric: bool) -> nn.Module:
+def get_loss_fn(
+    use_asymmetric: bool,
+    gamma_neg: float = 4.0,
+    gamma_pos: float = 1.0,
+    clip: float = 0.05,
+) -> nn.Module:
     """Return the loss function for the current experiment.
 
     Both functions accept raw logits and float targets so the calling code
@@ -79,7 +84,10 @@ def get_loss_fn(use_asymmetric: bool) -> nn.Module:
 
     Args:
         use_asymmetric: If True, return AsymmetricLoss; otherwise BCEWithLogitsLoss.
+        gamma_neg: Focusing parameter for negative samples (passed to AsymmetricLoss).
+        gamma_pos: Focusing parameter for positive samples (passed to AsymmetricLoss).
+        clip:      Probability margin for easy negative suppression (passed to AsymmetricLoss).
     """
     if use_asymmetric:
-        return AsymmetricLoss(gamma_neg=4.0, gamma_pos=1.0, clip=0.05)
+        return AsymmetricLoss(gamma_neg=gamma_neg, gamma_pos=gamma_pos, clip=clip)
     return nn.BCEWithLogitsLoss()

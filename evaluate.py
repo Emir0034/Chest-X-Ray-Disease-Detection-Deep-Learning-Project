@@ -18,6 +18,47 @@ from utils import compute_auc_per_class, load_checkpoint
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
+def _compute_faar_freq_weights(train_df, class_names, mode="inverse", cap_max=3.0):
+    """Compute normalized frequency weights for FAAR from the training split.
+
+    Supports both one-hot column layout and NIH pipe-separated 'Finding Labels'.
+
+    Modes:
+        "inverse"  — 1/(freq+eps), normalized by mean
+        "cap"      — inverse, normalized, capped at cap_max, re-normalized
+        "sqrt_inv" — 1/sqrt(freq+eps), normalized by mean
+    """
+    n = len(train_df)
+    if all(c in train_df.columns for c in class_names):
+        pos = train_df[class_names].values.sum(axis=0).astype(float)
+    elif "Finding Labels" in train_df.columns:
+        pos = np.array(
+            [train_df["Finding Labels"].str.contains(cls, regex=False).sum()
+             for cls in class_names],
+            dtype=float,
+        )
+    else:
+        raise ValueError(
+            "_compute_faar_freq_weights: train_df has neither per-class columns "
+            "nor a 'Finding Labels' column."
+        )
+    freq = pos / n
+    if mode == "inverse":
+        w = 1.0 / (freq + 1e-6)
+        w = w / w.mean()
+    elif mode == "cap":
+        w = 1.0 / (freq + 1e-6)
+        w = w / w.mean()
+        w = np.minimum(w, cap_max)
+        w = w / w.mean()
+    elif mode == "sqrt_inv":
+        w = 1.0 / np.sqrt(freq + 1e-6)
+        w = w / w.mean()
+    else:
+        raise ValueError(f"_compute_faar_freq_weights: unknown mode {mode!r}")
+    return torch.tensor(w, dtype=torch.float32)
+
+
 def evaluate_model(
     model: torch.nn.Module,
     loader: torch.utils.data.DataLoader,
@@ -119,8 +160,8 @@ def main() -> None:
     os.makedirs(config.METRICS_DIR, exist_ok=True)
     os.makedirs(config.FIGURES_DIR, exist_ok=True)
 
-    # ── Load test split ───────────────────────────────────────────────────────
-    _, _, test_df = create_patient_splits(
+    # ── Load splits (train_df needed for FAAR freq_weights) ──────────────────
+    train_df, _, test_df = create_patient_splits(
         csv_path  = config.DATA_CSV,
         split_dir = config.SPLIT_DIR,
         seed      = config.SEED,
@@ -137,7 +178,16 @@ def main() -> None:
 
     # ── Load best checkpoint ──────────────────────────────────────────────────
     best_ckpt = os.path.join(config.CHECKPOINTS_DIR, f"{exp_name}_best.pth")
-    model = build_model(config).to(DEVICE)
+    if getattr(config, "USE_FAAR", False):
+        fw    = _compute_faar_freq_weights(
+            train_df,
+            config.DISEASE_LABELS,
+            mode=getattr(config, "FAAR_WEIGHT_MODE", "inverse"),
+            cap_max=getattr(config, "FAAR_CAP_MAX", 3.0),
+        )
+        model = build_model(config, faar_freq_weights=fw).to(DEVICE)
+    else:
+        model = build_model(config).to(DEVICE)
     ckpt  = load_checkpoint(best_ckpt, model)
     print(f"Loaded checkpoint: {best_ckpt}")
     print(f"  (trained to epoch {ckpt.get('epoch', '?')}, val AUC {ckpt.get('val_auc', '?'):.4f})\n")

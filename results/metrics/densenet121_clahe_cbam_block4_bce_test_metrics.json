@@ -1,0 +1,24 @@
+{
+  "avg_auc": 0.8323445301644004,
+  "per_class_auc": {
+    "Atelectasis": 0.8130005977487944,
+    "Cardiomegaly": 0.8936307172327131,
+    "Effusion": 0.8862317441476144,
+    "Infiltration": 0.7151857815618596,
+    "Mass": 0.837754778397106,
+    "Nodule": 0.759637025933033,
+    "Pneumonia": 0.7564035474275641,
+    "Pneumothorax": 0.8822882047553958,
+    "Consolidation": 0.7995950736697064,
+    "Edema": 0.8980650154260214,
+    "Emphysema": 0.9197220291132838,
+    "Fibrosis": 0.8058492115909505,
+    "Pleural_Thickening": 0.7804333978728362,
+    "Hernia": 0.9050262974247247
+  },
+  "precision": 0.4465448275162972,
+  "recall": 0.1274150210014888,
+  "f1": 0.1864247902796397,
+  "threshold": 0.5,
+  "exp_name": "densenet121_clahe_cbam_block4_bce"
+}

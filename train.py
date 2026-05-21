@@ -24,6 +24,47 @@ from utils import (
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
+def _compute_faar_freq_weights(train_df, class_names, mode="inverse", cap_max=3.0):
+    """Compute normalized frequency weights for FAAR from the training split.
+
+    Supports both one-hot column layout and NIH pipe-separated 'Finding Labels'.
+
+    Modes:
+        "inverse"  — 1/(freq+eps), normalized by mean
+        "cap"      — inverse, normalized, capped at cap_max, re-normalized
+        "sqrt_inv" — 1/sqrt(freq+eps), normalized by mean
+    """
+    n = len(train_df)
+    if all(c in train_df.columns for c in class_names):
+        pos = train_df[class_names].values.sum(axis=0).astype(float)
+    elif "Finding Labels" in train_df.columns:
+        pos = np.array(
+            [train_df["Finding Labels"].str.contains(cls, regex=False).sum()
+             for cls in class_names],
+            dtype=float,
+        )
+    else:
+        raise ValueError(
+            "_compute_faar_freq_weights: train_df has neither per-class columns "
+            "nor a 'Finding Labels' column."
+        )
+    freq = pos / n
+    if mode == "inverse":
+        w = 1.0 / (freq + 1e-6)
+        w = w / w.mean()
+    elif mode == "cap":
+        w = 1.0 / (freq + 1e-6)
+        w = w / w.mean()
+        w = np.minimum(w, cap_max)
+        w = w / w.mean()
+    elif mode == "sqrt_inv":
+        w = 1.0 / np.sqrt(freq + 1e-6)
+        w = w / w.mean()
+    else:
+        raise ValueError(f"_compute_faar_freq_weights: unknown mode {mode!r}")
+    return torch.tensor(w, dtype=torch.float32)
+
+
 def train_one_epoch(
     model: torch.nn.Module,
     loader: torch.utils.data.DataLoader,
@@ -113,6 +154,14 @@ def main() -> None:
     print(f"CLAHE      : {config.USE_CLAHE}")
     print(f"CBAM       : {config.USE_CBAM}")
     print(f"Loss       : {'AsymmetricLoss' if config.USE_ASYMMETRIC_LOSS else 'BCEWithLogitsLoss'}")
+    if config.USE_ASYMMETRIC_LOSS:
+        print(f"ASL params : gamma_neg={config.ASL_GAMMA_NEG}, gamma_pos={config.ASL_GAMMA_POS}, clip={config.ASL_CLIP}")
+    print(f"FAAR       : {'enabled' if getattr(config, 'USE_FAAR', False) else 'disabled'}")
+    if getattr(config, "USE_FAAR", False):
+        print(f"FAAR mode  : {getattr(config, 'FAAR_WEIGHT_MODE', 'inverse')}")
+        if getattr(config, "FAAR_WEIGHT_MODE", "inverse") == "cap":
+            print(f"FAAR cap   : {getattr(config, 'FAAR_CAP_MAX', 3.0)}")
+        print(f"FAAR alpha : init={getattr(config, 'FAAR_ALPHA_INIT', 0.0)}")
     print(f"{'='*60}\n")
 
     # ── Data ─────────────────────────────────────────────────────────────────
@@ -132,14 +181,29 @@ def main() -> None:
     )
 
     # ── Model / optimiser / scheduler ────────────────────────────────────────
-    model     = build_model(config).to(DEVICE)
+    if getattr(config, "USE_FAAR", False):
+        fw = _compute_faar_freq_weights(
+            train_df,
+            config.DISEASE_LABELS,
+            mode=getattr(config, "FAAR_WEIGHT_MODE", "inverse"),
+            cap_max=getattr(config, "FAAR_CAP_MAX", 3.0),
+        )
+        print(f"FAAR freq_weights : {fw.numpy().round(4).tolist()}\n")
+        model = build_model(config, faar_freq_weights=fw).to(DEVICE)
+    else:
+        model = build_model(config).to(DEVICE)
     optimizer = torch.optim.Adam(
         model.parameters(), lr=config.LEARNING_RATE, weight_decay=1e-5
     )
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer, mode="max", patience=3, factor=0.5
     )
-    loss_fn = get_loss_fn(config.USE_ASYMMETRIC_LOSS)
+    loss_fn = get_loss_fn(
+        use_asymmetric=config.USE_ASYMMETRIC_LOSS,
+        gamma_neg=config.ASL_GAMMA_NEG,
+        gamma_pos=config.ASL_GAMMA_POS,
+        clip=config.ASL_CLIP,
+    )
     scaler  = torch.cuda.amp.GradScaler()
 
     # ── Training state ────────────────────────────────────────────────────────
