@@ -154,7 +154,11 @@ def main() -> None:
     exp_name = config.get_experiment_name()
     print(f"\n{'='*60}")
     print(f"Evaluating : {exp_name}")
+    print(f"Status     : {config.EXPERIMENT_STATUS}")
     print(f"Device     : {DEVICE}")
+    print(f"Checkpoints: {config.CHECKPOINTS_DIR}")
+    print(f"Metrics    : {config.METRICS_DIR}")
+    print(f"Figures    : {config.FIGURES_DIR}")
     print(f"{'='*60}\n")
 
     os.makedirs(config.METRICS_DIR, exist_ok=True)

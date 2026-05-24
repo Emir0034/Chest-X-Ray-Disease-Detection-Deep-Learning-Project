@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 
 class AsymmetricLoss(nn.Module):
@@ -71,23 +72,40 @@ class AsymmetricLoss(nn.Module):
         return -loss.sum(dim=1).mean()
 
 
+class FocalLoss(nn.Module):
+    def __init__(self, gamma: float = 2.0, alpha=None):
+        super().__init__()
+        self.gamma = gamma
+        self.alpha = alpha  # None or scalar float in (0, 1)
+
+    def forward(self, logits: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
+        bce_loss = F.binary_cross_entropy_with_logits(
+            logits, targets, reduction="none"
+        )
+        pt   = torch.exp(-bce_loss)
+        loss = (1.0 - pt) ** self.gamma * bce_loss
+        if self.alpha is not None:
+            alpha_t = self.alpha * targets + (1.0 - self.alpha) * (1.0 - targets)
+            loss = alpha_t * loss
+        return loss.mean()
+
+
 def get_loss_fn(
     use_asymmetric: bool,
     gamma_neg: float = 4.0,
     gamma_pos: float = 1.0,
     clip: float = 0.05,
+    use_focal: bool = False,
+    focal_gamma: float = 2.0,
+    focal_alpha=None,
 ) -> nn.Module:
     """Return the loss function for the current experiment.
 
-    Both functions accept raw logits and float targets so the calling code
-    in train.py does not need to change between experiments.
-
-    Args:
-        use_asymmetric: If True, return AsymmetricLoss; otherwise BCEWithLogitsLoss.
-        gamma_neg: Focusing parameter for negative samples (passed to AsymmetricLoss).
-        gamma_pos: Focusing parameter for positive samples (passed to AsymmetricLoss).
-        clip:      Probability margin for easy negative suppression (passed to AsymmetricLoss).
+    Priority: AsymmetricLoss > FocalLoss > BCEWithLogitsLoss.
+    All variants accept raw logits and float targets.
     """
     if use_asymmetric:
         return AsymmetricLoss(gamma_neg=gamma_neg, gamma_pos=gamma_pos, clip=clip)
+    if use_focal:
+        return FocalLoss(gamma=focal_gamma, alpha=focal_alpha)
     return nn.BCEWithLogitsLoss()

@@ -1,0 +1,5 @@
+{
+  "exp_name": "densenet121_cbam_block34_asl_gn2_gp0_adamw",
+  "best_epoch": 5,
+  "best_val_auc": 0.8322514085151084
+}

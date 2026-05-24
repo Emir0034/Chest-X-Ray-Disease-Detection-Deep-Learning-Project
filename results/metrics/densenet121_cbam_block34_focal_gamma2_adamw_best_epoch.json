@@ -1,0 +1,5 @@
+{
+  "exp_name": "densenet121_cbam_block34_focal_gamma2_adamw",
+  "best_epoch": 5,
+  "best_val_auc": 0.8336214089108999
+}

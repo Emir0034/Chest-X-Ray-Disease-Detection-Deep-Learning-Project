@@ -1,0 +1,8 @@
+experiment_id,label,experiment_name,best_val_auc,best_epoch,mean_test_auc,precision,recall,f1,threshold
+01,01 Baseline,densenet121_bce,0.831855,6,0.835187,0.422616,0.118124,0.170008,0.500000
+02,02 CLAHE,densenet121_clahe_bce,0.832122,6,0.833851,0.419522,0.131025,0.184282,0.500000
+03b,03b CLAHE+CBAM,densenet121_clahe_cbam_block34_bce,0.831952,5,0.835863,0.404355,0.104964,0.145086,0.500000
+07,07 CBAM+Adam,densenet121_cbam_block34_bce,0.834438,5,0.836129,0.442110,0.128417,0.178960,0.500000
+08,08 BCE+AdamW,densenet121_cbam_block34_bce_adamw,0.833819,6,0.837103,0.448233,0.139499,0.196189,0.500000
+09,09 ASL+AdamW,densenet121_cbam_block34_asl_gn2_gp0_adamw,0.832251,5,0.836955,0.386513,0.238511,0.273556,0.500000
+10,10 Focal+AdamW,densenet121_cbam_block34_focal_gamma2_adamw,0.833621,5,0.835074,0.439119,0.125833,0.176862,0.500000

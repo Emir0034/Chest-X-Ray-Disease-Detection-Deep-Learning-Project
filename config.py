@@ -33,7 +33,14 @@ NUM_WORKERS   = 12      # default 4 but 0 for more safety starting (şimdilik)
 PIN_MEMORY    = True
 OPTIMIZER_NAME    = "adamw"  # "adam" or "adamw"
 WEIGHT_DECAY      = 1e-5    # normalde 1e-5
-EXPERIMENT_SUFFIX = "wd1e4"       # optional suffix, e.g. "wd1e4" or "lr5e5"
+EXPERIMENT_SUFFIX  = ""       # optional suffix, e.g. "wd1e4" or "lr5e5"
+# Use "trial" for exploratory runs that should not be treated as official experiments.
+# Use "official" for final documented experiments.
+EXPERIMENT_STATUS  = "official"  # "official" or "trial"
+if EXPERIMENT_STATUS not in ("official", "trial"):
+    raise ValueError(
+        f"EXPERIMENT_STATUS must be 'official' or 'trial', got {EXPERIMENT_STATUS!r}."
+    )
 
 # ── Dataset paths  (edit these before running) ───────────────────────────────
 DATA_CSV   = r"data/NIH Chest X-rays/Data_Entry_2017.csv"   # NIH ChestX-ray14 labels CSV
@@ -49,6 +56,9 @@ USE_ASYMMETRIC_LOSS = False  # Experiment 4:  Asymmetric Loss (replaces BCE)
 ASL_GAMMA_NEG   = 2.0        # Focusing parameter for negative samples
 ASL_GAMMA_POS   = 0.0        # Focusing parameter for positive samples
 ASL_CLIP        = 0.05       # Probability margin for easy negative suppression
+USE_FOCAL_LOSS  = False       # Experiment 10: Focal Loss (replaces BCE when ASL is off)
+FOCAL_GAMMA     = 2.0        # Focusing parameter for Focal Loss
+FOCAL_ALPHA     = None       # Optional scalar alpha weight (None = no alpha weighting)
 USE_FAAR        = False     # Experiment 5+: Frequency-Aware Attention Refinement
 FAAR_ALPHA_INIT = 0.0        # Initial residual scale (0.0 → identity at step 0)
 
@@ -63,11 +73,20 @@ FAAR_WEIGHT_MODE = "cap"
 FAAR_CAP_MAX     = 3.0
 
 # ── Results directories ──────────────────────────────────────────────────────
-RESULTS_DIR     = "results"
-CHECKPOINTS_DIR = os.path.join(RESULTS_DIR, "checkpoints")
-METRICS_DIR     = os.path.join(RESULTS_DIR, "metrics")
-FIGURES_DIR     = os.path.join(RESULTS_DIR, "figures")
-GRADCAM_DIR     = os.path.join(RESULTS_DIR, "figures", "gradcam")
+RESULTS_DIR = "results"
+
+# Official mode uses results/ directly.
+# Trial mode routes all outputs under results/trials/ to keep them isolated.
+_RESULTS_SUBDIR = os.path.join(RESULTS_DIR, "trials") if EXPERIMENT_STATUS == "trial" else RESULTS_DIR
+
+CHECKPOINTS_DIR = os.path.join(_RESULTS_SUBDIR, "checkpoints")
+METRICS_DIR     = os.path.join(_RESULTS_SUBDIR, "metrics")
+FIGURES_DIR     = os.path.join(_RESULTS_SUBDIR, "figures")
+GRADCAM_DIR     = os.path.join(_RESULTS_SUBDIR, "figures", "gradcam")
+
+# Always points to official checkpoints regardless of EXPERIMENT_STATUS.
+# Used by gradcam_compare.py which always loads Exp08/09 official checkpoints.
+OFFICIAL_CHECKPOINTS_DIR = os.path.join(RESULTS_DIR, "checkpoints")
 
 
 def get_experiment_name() -> str:
@@ -83,6 +102,8 @@ def get_experiment_name() -> str:
         parts.append(CBAM_PLACEMENT)   # e.g. "block4", "block34", "block1234"
     if USE_ASYMMETRIC_LOSS:
         parts.append(f"asl_gn{_fmt(ASL_GAMMA_NEG)}_gp{_fmt(ASL_GAMMA_POS)}")
+    elif USE_FOCAL_LOSS:
+        parts.append(f"focal_gamma{_fmt(FOCAL_GAMMA)}")
     else:
         parts.append("bce")
     if USE_FAAR:
@@ -98,6 +119,8 @@ def get_experiment_name() -> str:
         parts.append("adamw")
     if EXPERIMENT_SUFFIX:
         parts.append(EXPERIMENT_SUFFIX)
+    if EXPERIMENT_STATUS == "trial":
+        parts.append("trial")
     return "_".join(parts)
 
 
@@ -120,6 +143,8 @@ def get_experiment_name() -> str:
         parts.append(CBAM_PLACEMENT)
     if USE_ASYMMETRIC_LOSS:
         parts.append(f"asl_gn{_fmt(ASL_GAMMA_NEG)}_gp{_fmt(ASL_GAMMA_POS)}")
+    elif USE_FOCAL_LOSS:
+        parts.append(f"focal_gamma{_fmt(FOCAL_GAMMA)}")
     else:
         parts.append("bce")
     if USE_FAAR:

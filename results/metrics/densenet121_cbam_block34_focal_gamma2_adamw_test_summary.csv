@@ -1,0 +1,2 @@
+exp_name,avg_auc,precision,recall,f1,threshold
+densenet121_cbam_block34_focal_gamma2_adamw,0.8350736079949005,0.43911878452031994,0.12583312121242912,0.1768621262534061,0.5

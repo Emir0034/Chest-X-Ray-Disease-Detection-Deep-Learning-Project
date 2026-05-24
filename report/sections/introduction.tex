@@ -1,0 +1,27 @@
+\section{Introduction}
+
+Chest X-ray interpretation is one of the most commonly performed radiological tasks, yet it is resource-intensive and subject to variability among readers.
+Developing reliable automated systems for detecting pulmonary and cardiac pathologies from chest X-ray images could support radiologists in clinical workflows, particularly in settings with limited specialist access.
+
+The NIH ChestX-ray14 dataset~\cite{wang2017chestxray14} introduced a large-scale benchmark of 112,120 frontal chest X-ray images labelled with 14 disease categories using natural language processing applied to radiology reports.
+A key challenge of this dataset is that it defines a \emph{multi-label} classification problem: each image may simultaneously present zero or more of the 14 pathologies.
+This stands in contrast to single-label classification, since diseases frequently co-occur (e.g., Consolidation with Infiltration, or Effusion with Edema), and the model must predict each class independently.
+
+A further challenge is \emph{class imbalance}.
+Some pathologies are common—Infiltration appears in approximately 18\% of images—while others are rare, such as Hernia ($<$0.2\%).
+Standard cross-entropy loss treats all samples equally, which can cause the model to neglect minority classes.
+Loss function design choices, including asymmetric and focal variants, directly address this issue.
+
+Building on the CheXNet~\cite{rajpurkar2017chexnet} paradigm of using DenseNet121 pretrained on ImageNet as the backbone for this task, this work investigates four axes of variation:
+
+\begin{enumerate}
+  \item \textbf{Preprocessing}: the effect of CLAHE contrast enhancement.
+  \item \textbf{Attention}: CBAM~\cite{woo2018cbam} module placement at different depths within the DenseNet121 feature hierarchy.
+  \item \textbf{Loss function}: Binary Cross-Entropy (BCE), Asymmetric Loss (ASL)~\cite{ridnik2021asl}, and Focal Loss~\cite{lin2017focal}.
+  \item \textbf{Optimizer}: Adam versus AdamW~\cite{loshchilov2019adamw}.
+\end{enumerate}
+
+The primary evaluation metric is Mean Test AUC (macro-average ROC-AUC over all 14 classes), which is robust to class imbalance and threshold-independent.
+Precision, Recall, and F1 score at threshold 0.5 are reported as secondary metrics to characterize sensitivity at the operating threshold.
+
+This paper reports results from ten experimental configurations, identifies the best-performing models under both AUC-oriented and Recall/F1-oriented objectives, and provides qualitative interpretability analysis via Grad-CAM~\cite{selvaraju2017gradcam}.

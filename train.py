@@ -150,12 +150,21 @@ def main() -> None:
     exp_name = config.get_experiment_name()
     print(f"\n{'='*60}")
     print(f"Experiment : {exp_name}")
+    print(f"Status     : {config.EXPERIMENT_STATUS}")
     print(f"Device     : {DEVICE}")
+    print(f"Checkpoints: {config.CHECKPOINTS_DIR}")
+    print(f"Metrics    : {config.METRICS_DIR}")
+    print(f"Figures    : {config.FIGURES_DIR}")
     print(f"CLAHE      : {config.USE_CLAHE}")
     print(f"CBAM       : {config.USE_CBAM}")
-    print(f"Loss       : {'AsymmetricLoss' if config.USE_ASYMMETRIC_LOSS else 'BCEWithLogitsLoss'}")
     if config.USE_ASYMMETRIC_LOSS:
+        print(f"Loss       : AsymmetricLoss")
         print(f"ASL params : gamma_neg={config.ASL_GAMMA_NEG}, gamma_pos={config.ASL_GAMMA_POS}, clip={config.ASL_CLIP}")
+    elif getattr(config, 'USE_FOCAL_LOSS', False):
+        print(f"Loss       : FocalLoss")
+        print(f"Focal params : gamma={config.FOCAL_GAMMA}, alpha={config.FOCAL_ALPHA}")
+    else:
+        print(f"Loss       : BCEWithLogitsLoss")
     print(f"FAAR       : {'enabled' if getattr(config, 'USE_FAAR', False) else 'disabled'}")
     if getattr(config, "USE_FAAR", False):
         print(f"FAAR mode  : {getattr(config, 'FAAR_WEIGHT_MODE', 'inverse')}")
@@ -214,6 +223,9 @@ def main() -> None:
         gamma_neg=config.ASL_GAMMA_NEG,
         gamma_pos=config.ASL_GAMMA_POS,
         clip=config.ASL_CLIP,
+        use_focal=getattr(config, 'USE_FOCAL_LOSS', False),
+        focal_gamma=getattr(config, 'FOCAL_GAMMA', 2.0),
+        focal_alpha=getattr(config, 'FOCAL_ALPHA', None),
     )
     scaler  = torch.cuda.amp.GradScaler()
 

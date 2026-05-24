@@ -1,0 +1,9 @@
+Automated multi-label classification of chest diseases from X-ray images is a challenging task due to class imbalance, label co-occurrence, and high intra-class variability.
+This work presents a systematic ablation study based on DenseNet121~\cite{huang2017densenet} for 14-class multi-label classification on the NIH ChestX-ray14 dataset~\cite{wang2017chestxray14}.
+We evaluate the impact of CLAHE preprocessing, Convolutional Block Attention Module (CBAM)~\cite{woo2018cbam} at three insertion points, three loss functions (Binary Cross-Entropy, Asymmetric Loss~\cite{ridnik2021asl}, and Focal Loss~\cite{lin2017focal}), and two optimizers (Adam and AdamW~\cite{loshchilov2019adamw}).
+
+Using a patient-level 70/15/15 train/validation/test split, we show that CLAHE preprocessing does not consistently improve AUC, while CBAM inserted after DenseBlocks 3 and 4 (\textit{block34}) provides the best attention placement.
+Removing CLAHE and using AdamW with CBAM block34 and BCE achieves the highest Mean Test AUC of \textbf{0.8371} (Experiment~08).
+Replacing BCE with Asymmetric Loss (Experiment~09) achieves nearly identical AUC (0.8370) while substantially improving Recall (0.2385 vs.\ 0.1395) and F1 score (0.2736 vs.\ 0.1962).
+Focal Loss with $\gamma{=}2.0$ does not improve over either BCE or ASL.
+Grad-CAM~\cite{selvaraju2017gradcam} visualizations are included for qualitative interpretability analysis.

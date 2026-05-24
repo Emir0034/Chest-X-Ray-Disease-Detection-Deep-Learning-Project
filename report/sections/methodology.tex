@@ -1,0 +1,84 @@
+\section{Methodology}
+
+\subsection{Dataset and Patient-Level Splits}
+
+All experiments use NIH ChestX-ray14~\cite{wang2017chestxray14}: 112,120 frontal chest X-ray images, 14 disease labels, multi-label format.
+Labels are binary per class; a single image may carry multiple positive labels.
+
+To prevent data leakage, splits are performed at the \emph{patient level}: all images from a patient appear in exactly one of train/validation/test.
+The resulting split proportions are approximately 70\% train, 15\% validation, and 15\% test, with a fixed random seed for reproducibility.
+This split is generated once and reused for all experiments.
+
+\subsection{Preprocessing and Augmentation}
+
+All images are resized to $224 \times 224$ pixels.
+During training, the following augmentations are applied:
+\begin{itemize}
+  \item RandomResizedCrop($224$, scale=$(0.8, 1.0)$)
+  \item RandomRotation($\pm 10^\circ$)
+  \item ColorJitter(brightness$=0.2$, contrast$=0.2$)
+\end{itemize}
+
+Horizontal flips are \emph{not} applied, as left-right asymmetry carries diagnostic meaning in chest X-rays (e.g., cardiac silhouette position).
+All images are normalized using ImageNet mean and standard deviation.
+At validation and test time, only resize and normalization are applied.
+
+\textbf{CLAHE} (Contrast-Limited Adaptive Histogram Equalization~\cite{pizer1987clahe}) was evaluated as an optional preprocessing step in Experiments 02--05.
+When enabled, it is applied per-image to the grayscale channel before RGB conversion.
+
+\subsection{Model Architecture}
+
+The backbone is DenseNet121~\cite{huang2017densenet} pretrained on ImageNet.
+The original 1000-class classifier head is replaced with a single linear layer mapping the 1024-dimensional global average pooled features to 14 output logits.
+No sigmoid is applied inside the model; sigmoid probabilities are computed externally during evaluation.
+
+\subsubsection{CBAM Placement}
+
+The CBAM~\cite{woo2018cbam} module is inserted at one of three positions within the feature hierarchy:
+
+\begin{itemize}
+  \item \textbf{block4}: one CBAM module after DenseBlock4, norm5, and ReLU, before global average pooling ($1024$ channels, $7{\times}7$ spatial).
+  \item \textbf{block34}: two CBAM modules — one after DenseBlock3 ($1024$ ch., $14{\times}14$) and one at block4. (\textit{Selected as best.})
+  \item \textbf{block1234}: four CBAM modules at all DenseBlocks.
+\end{itemize}
+
+\subsection{Loss Functions}
+
+Three loss functions are evaluated:
+
+\begin{itemize}
+  \item \textbf{BCE}: Binary Cross-Entropy with logits (\texttt{BCEWithLogitsLoss}). Applied per-class, averaged over all 14 outputs.
+  \item \textbf{Focal Loss}: $\mathcal{L}_\text{focal} = -(1-p_t)^{\gamma} \log(p_t)$, with $\gamma{=}2.0$ and no $\alpha$ weighting.
+  \item \textbf{Asymmetric Loss (ASL)}: separate focusing parameters $\gamma_-{=}2.0$, $\gamma_+{=}0.0$, probability shift $m{=}0.05$. Priority in selection: ASL $>$ Focal $>$ BCE.
+\end{itemize}
+
+\subsection{Optimizers and Training Schedule}
+
+All models are trained for up to 50 epochs with:
+\begin{itemize}
+  \item Learning rate: $1{\times}10^{-4}$
+  \item Weight decay: $1{\times}10^{-5}$
+  \item Batch size: 64
+  \item Optimizer: Adam or AdamW~\cite{loshchilov2019adamw,paszke2019pytorch}
+  \item Scheduler: ReduceLROnPlateau (factor $0.1$, patience $3$) on validation AUC
+  \item Early stopping: patience $7$ epochs on validation AUC
+  \item Mixed-precision training (AMP) with gradient scaling
+\end{itemize}
+
+Experiments 01--06 use Adam; Experiments 07--10 compare Adam (Exp~07) and AdamW (Exp~08--10).
+
+\subsection{Evaluation Metrics}
+
+\begin{itemize}
+  \item \textbf{Mean Test AUC}: macro-average of ROC-AUC computed independently per class over the full test set.
+    This is the primary metric; it is threshold-independent and robust to class imbalance.
+  \item \textbf{Precision, Recall, F1}: macro-averaged over 14 classes at decision threshold 0.5.
+    These measure performance at the operating threshold and are more sensitive to imbalance and threshold choice.
+    Recall characterizes sensitivity — the fraction of true positives correctly identified.
+\end{itemize}
+
+\subsection{Grad-CAM Visualization}
+
+Gradient-weighted Class Activation Mapping (Grad-CAM)~\cite{selvaraju2017gradcam} is computed by hooking the gradient of the target class score with respect to the activations of \texttt{denseblock4}.
+The resulting heatmap is upsampled to the input image resolution and overlaid for visual inspection.
+Grad-CAM is computed separately for Experiment~08 and Experiment~09 on selected positive test examples.

@@ -1,0 +1,49 @@
+\section{Background and Related Work}
+
+\subsection{DenseNet121 and CheXNet}
+
+DenseNet~\cite{huang2017densenet} (Densely Connected Convolutional Networks) connects each layer to every subsequent layer within a dense block, enabling direct feature reuse and gradient flow.
+DenseNet121 specifically contains four dense blocks with growth rate 32, totalling 121 layers.
+CheXNet~\cite{rajpurkar2017chexnet} demonstrated that a DenseNet121 model fine-tuned on NIH ChestX-ray14 could achieve radiologist-level performance on pneumonia detection, establishing DenseNet121 as a standard backbone for chest X-ray classification tasks.
+
+\subsection{NIH ChestX-ray14}
+
+The NIH ChestX-ray14 dataset~\cite{wang2017chestxray14} provides 112,120 frontal-view chest X-ray images from 30,805 unique patients, labelled with 14 disease categories: Atelectasis, Cardiomegaly, Effusion, Infiltration, Mass, Nodule, Pneumonia, Pneumothorax, Consolidation, Edema, Emphysema, Fibrosis, Pleural Thickening, and Hernia.
+Labels were extracted via NLP from associated radiology reports and are known to contain some noise.
+The dataset defines a multi-label classification task, where images labelled ``No Finding'' comprise approximately 53\% of the data.
+
+\subsection{CBAM: Convolutional Block Attention Module}
+
+CBAM~\cite{woo2018cbam} applies two sequential attention gates to a feature map: a \emph{channel attention} module that recalibrates feature channel importance via global average and max pooling followed by a shared MLP, and a \emph{spatial attention} module that highlights informative spatial locations via a convolutional gate on channel-pooled features.
+CBAM can be inserted at any point in a convolutional network, and its placement within the feature hierarchy affects which levels of abstraction are attended to.
+
+\subsection{CLAHE}
+
+Contrast-Limited Adaptive Histogram Equalization (CLAHE)~\cite{pizer1987clahe} enhances local contrast in images by equalizing histograms in small overlapping tiles while limiting amplification of noise.
+In medical imaging, CLAHE is commonly applied as a preprocessing step to enhance subtle structures in chest X-rays.
+
+\subsection{Loss Functions for Multi-Label Imbalanced Classification}
+
+\paragraph{Focal Loss.}
+Focal Loss~\cite{lin2017focal} was originally proposed for dense object detection to address foreground-background imbalance.
+It modifies BCE by a factor $(1 - p_t)^\gamma$, which down-weights well-classified (easy) examples:
+\[
+  \mathcal{L}_\text{focal} = -(1-p_t)^\gamma \log(p_t), \quad \gamma \geq 0.
+\]
+With $\gamma{=}2.0$, the loss focuses training on hard examples regardless of their class.
+
+\paragraph{Asymmetric Loss (ASL).}
+ASL~\cite{ridnik2021asl} extends the focal idea by using \emph{separate} focusing parameters for positive and negative samples:
+\[
+  \mathcal{L}_\text{ASL} = \begin{cases}
+    -(1-p)^{\gamma_+} \log(p) & \text{if } y=1 \\
+    -(p_m)^{\gamma_-} \log(1-p_m) & \text{if } y=0
+  \end{cases}
+\]
+where $p_m = \max(p - m, 0)$ is a probability shift that zeros out very easy negatives.
+With $\gamma_- > \gamma_+$, ASL suppresses easy negative contributions much more aggressively than Focal Loss, making it particularly well-suited to multi-label problems with heavy label imbalance.
+
+\subsection{AdamW}
+
+AdamW~\cite{loshchilov2019adamw} decouples weight decay from the gradient-based update, applying regularization directly to the weights rather than through the gradient term.
+This produces more consistent regularization across parameters and is reported to improve generalization when fine-tuning pretrained models.

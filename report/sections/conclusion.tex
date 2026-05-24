@@ -1,0 +1,29 @@
+\section{Conclusion and Future Work}
+
+This work presented a systematic ablation study of DenseNet121-based multi-label chest X-ray disease classification on NIH ChestX-ray14.
+We evaluated the effects of CLAHE preprocessing, CBAM attention at three insertion points, three loss functions (BCE, ASL, Focal Loss), and two optimizers (Adam and AdamW) across ten experimental configurations.
+
+The key findings are:
+\begin{itemize}
+  \item CLAHE preprocessing did not consistently improve Mean Test AUC and was excluded from the final configurations.
+  \item CBAM block34 (attention after DenseBlocks 3 and 4) provided the best attention placement, outperforming block4-only and block1234 variants.
+  \item Removing CLAHE and using AdamW with CBAM block34 and BCE achieved the highest Mean Test AUC of \textbf{0.8371} (Experiment~08).
+  \item Replacing BCE with Asymmetric Loss (Experiment~09) preserved AUC (0.8370) while substantially improving Recall (+0.099) and F1 (+0.077).
+  \item Focal Loss with $\gamma{=}2.0$ did not improve over either BCE or ASL.
+\end{itemize}
+
+\textbf{Experiment~08} (DenseNet121 + CBAM block34 + BCE + AdamW) is recommended as the best AUC-oriented final model with Mean Test AUC 0.8371.
+\textbf{Experiment~09} (DenseNet121 + CBAM block34 + ASL + AdamW) is recommended as the best Recall/F1-oriented alternative with Recall 0.2385 and F1 0.2736 at nearly identical AUC.
+
+\subsection*{Future Work}
+
+Several directions could extend this study:
+\begin{itemize}
+  \item \textbf{Class-specific threshold tuning}: optimizing per-class decision thresholds on the validation set could improve Precision--Recall balance for each disease.
+  \item \textbf{External validation}: evaluating the models on an independent dataset (e.g., CheXpert, MIMIC-CXR) would assess generalization beyond NIH ChestX-ray14.
+  \item \textbf{Model calibration}: Platt scaling or temperature calibration could align predicted probabilities with empirical event rates.
+  \item \textbf{Ensemble approaches}: combining Exp~08 and Exp~09 predictions may yield improved performance on both AUC and Recall objectives.
+  \item \textbf{Alternative backbones}: testing EfficientNet, ResNet-based models, or vision transformer architectures could reveal whether the observed trends generalize beyond DenseNet121.
+  \item \textbf{Label noise handling}: methods designed for noisy multi-label annotations may improve performance given the known NLP-extracted label noise in ChestX-ray14.
+  \item \textbf{Localization evaluation}: if bounding box annotations are available (e.g., from the NIH localization subset), formal localization accuracy could be evaluated alongside Grad-CAM qualitative observations.
+\end{itemize}

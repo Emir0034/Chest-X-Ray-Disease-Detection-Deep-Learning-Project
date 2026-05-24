@@ -1,0 +1,93 @@
+\documentclass[twocolumn,10pt]{article}
+
+% ── Page layout ───────────────────────────────────────────────────────────────
+\usepackage[
+  top=1.0in, bottom=1.0in,
+  left=0.85in, right=0.85in,
+  columnsep=0.25in
+]{geometry}
+
+% ── Typography ────────────────────────────────────────────────────────────────
+\usepackage{times}          % Times New Roman font
+\usepackage{microtype}      % Improved spacing
+
+% ── Math ──────────────────────────────────────────────────────────────────────
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+% ── Figures and tables ────────────────────────────────────────────────────────
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{float}
+
+% ── References and URLs ───────────────────────────────────────────────────────
+\usepackage{cite}
+\usepackage{url}
+\usepackage[
+  colorlinks=true,
+  linkcolor=black,
+  citecolor=black,
+  urlcolor=black
+]{hyperref}
+
+% ── Misc ──────────────────────────────────────────────────────────────────────
+\usepackage{xcolor}
+\usepackage{enumitem}
+
+% ── Paragraph spacing ─────────────────────────────────────────────────────────
+\setlength{\parskip}{2pt}
+\setlength{\parindent}{1em}
+
+% ── Section spacing ───────────────────────────────────────────────────────────
+\usepackage{titlesec}
+\titlespacing*{\section}{0pt}{8pt plus 2pt minus 1pt}{4pt plus 1pt}
+\titlespacing*{\subsection}{0pt}{6pt plus 2pt minus 1pt}{3pt plus 1pt}
+\titlespacing*{\subsubsection}{0pt}{4pt plus 1pt minus 1pt}{2pt plus 1pt}
+
+% ── Caption style ─────────────────────────────────────────────────────────────
+\captionsetup{font=small, labelfont=bf, skip=4pt}
+
+% ── Two-column figures: table* and figure* span both columns ──────────────────
+\usepackage{stfloats}   % allows [b] placement for two-column floats
+
+% ─────────────────────────────────────────────────────────────────────────────
+\title{%
+  \textbf{Chest X-Ray Disease Detection Using DenseNet121\\[2pt]
+  with Attention and Loss Function Analysis}
+}
+
+\author{%
+  % TODO: Replace with your name and affiliation before submission
+  Anonymous Author \\
+  \small\textit{TODO: Department, Institution, Country} \\
+  \small\texttt{TODO: email@example.com}
+}
+
+\date{}   % Remove date from title block
+
+% ─────────────────────────────────────────────────────────────────────────────
+\begin{document}
+
+\maketitle
+\thispagestyle{plain}
+
+% ── Abstract ──────────────────────────────────────────────────────────────────
+\begin{abstract}
+\input{sections/abstract}
+\end{abstract}
+
+% ── Sections ──────────────────────────────────────────────────────────────────
+\input{sections/introduction}
+\input{sections/background}
+\input{sections/methodology}
+\input{sections/results}
+\input{sections/discussion}
+\input{sections/conclusion}
+
+% ── References ────────────────────────────────────────────────────────────────
+\bibliographystyle{plain}
+\bibliography{references}
+
+\end{document}
