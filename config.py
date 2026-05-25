@@ -26,17 +26,21 @@ DISEASE_LABELS = [
 
 # ── Training hyperparameters ─────────────────────────────────────────────────
 BATCH_SIZE    = 64 # default 32
-LEARNING_RATE = 1e-4 # normalde 1e-4
-NUM_EPOCHS    = 50 # 50
-PATIENCE      = 7       # early stopping patience (epochs without val AUC improvement)
+LEARNING_RATE = 2e-5 # normalde 1e-4
+NUM_EPOCHS    = 20 # 50
+PATIENCE      = 5       # early stopping patience (epochs without val AUC improvement) | normalde 7 
 NUM_WORKERS   = 12      # default 4 but 0 for more safety starting (şimdilik)
 PIN_MEMORY    = True
 OPTIMIZER_NAME    = "adamw"  # "adam" or "adamw"
 WEIGHT_DECAY      = 1e-5    # normalde 1e-5
-EXPERIMENT_SUFFIX  = ""       # optional suffix, e.g. "wd1e4" or "lr5e5"
+FINE_TUNE_FROM_CHECKPOINT = "results/checkpoints/densenet121_cbam_block34_bce_adamw_best.pth"  # empty = start from scratch / ImageNet-pretrained
+                                # set to a checkpoint path to initialize model weights only
+                                # (optimizer, scheduler, epoch, best AUC are NOT resumed)
+                                # example: "results/checkpoints/densenet121_cbam_block34_bce_adamw_best.pth"
+EXPERIMENT_SUFFIX  = "stage2_from_exp08_asl_lr2e5"       # optional suffix, e.g. "wd1e4" or "lr5e5"
 # Use "trial" for exploratory runs that should not be treated as official experiments.
 # Use "official" for final documented experiments.
-EXPERIMENT_STATUS  = "official"  # "official" or "trial"
+EXPERIMENT_STATUS  = "trial"  # "official" or "trial"
 if EXPERIMENT_STATUS not in ("official", "trial"):
     raise ValueError(
         f"EXPERIMENT_STATUS must be 'official' or 'trial', got {EXPERIMENT_STATUS!r}."
@@ -52,7 +56,7 @@ SPLIT_DIR  = r"splits"             # where train/val/test CSV splits are saved
 USE_CLAHE           = False    # Experiment 2+: CLAHE contrast enhancement
 USE_CBAM            = True  # Experiment 3+: CBAM attention module
 CBAM_PLACEMENT      = "block34"   # "block4" | "block34" | "block1234" — ignored when USE_CBAM=False
-USE_ASYMMETRIC_LOSS = False  # Experiment 4:  Asymmetric Loss (replaces BCE)
+USE_ASYMMETRIC_LOSS = True  # Experiment 4:  Asymmetric Loss (replaces BCE)
 ASL_GAMMA_NEG   = 2.0        # Focusing parameter for negative samples
 ASL_GAMMA_POS   = 0.0        # Focusing parameter for positive samples
 ASL_CLIP        = 0.05       # Probability margin for easy negative suppression

@@ -81,7 +81,7 @@ def train_one_epoch(
     model.train()
     total_loss = 0.0
 
-    for images, labels in tqdm(loader, desc="  Train", leave=False, unit="batch", dynamic_ncols=True, position=1):
+    for batch_idx, (images, labels) in enumerate(tqdm(loader, desc="  Train", leave=False, unit="batch", dynamic_ncols=True, position=1)):
         images = images.to(device, non_blocking=True)
         labels = labels.to(device, non_blocking=True)
 
@@ -94,7 +94,13 @@ def train_one_epoch(
         scaler.step(optimizer)
         scaler.update()
 
-        total_loss += loss.item()
+        loss_val = loss.item()
+        if loss_val != loss_val or abs(loss_val) == float("inf"):
+            raise RuntimeError(
+                f"NaN or Inf loss at batch {batch_idx} (loss={loss_val}). "
+                "Check loss function, input data, or learning rate."
+            )
+        total_loss += loss_val
 
     return total_loss / len(loader)
 
@@ -173,6 +179,8 @@ def main() -> None:
         print(f"FAAR alpha : init={getattr(config, 'FAAR_ALPHA_INIT', 0.0)}")
     print(f"Optimizer  : {getattr(config, 'OPTIMIZER_NAME', 'adam').upper()}")
     print(f"Weight Decay: {getattr(config, 'WEIGHT_DECAY', 1e-5)}")
+    _ft_display = getattr(config, "FINE_TUNE_FROM_CHECKPOINT", "") or "no"
+    print(f"Fine-tune  : {_ft_display}")
     print(f"{'='*60}\n")
 
     # ── Data ─────────────────────────────────────────────────────────────────
@@ -203,6 +211,29 @@ def main() -> None:
         model = build_model(config, faar_freq_weights=fw).to(DEVICE)
     else:
         model = build_model(config).to(DEVICE)
+
+    # ── Fine-tune initialization (model weights only) ─────────────────────────
+    _ft_ckpt = getattr(config, "FINE_TUNE_FROM_CHECKPOINT", "")
+    if _ft_ckpt:
+        if not os.path.isfile(_ft_ckpt):
+            raise FileNotFoundError(
+                f"FINE_TUNE_FROM_CHECKPOINT: checkpoint not found: {_ft_ckpt!r}"
+            )
+        print(f"Fine-tuning initialized from checkpoint: {_ft_ckpt}")
+        _ft_raw = torch.load(_ft_ckpt, map_location=DEVICE)
+        if isinstance(_ft_raw, dict) and "model_state_dict" in _ft_raw:
+            _ft_state = _ft_raw["model_state_dict"]
+        elif isinstance(_ft_raw, dict) and "state_dict" in _ft_raw:
+            _ft_state = _ft_raw["state_dict"]
+        else:
+            _ft_state = _ft_raw
+        if any(k.startswith("module.") for k in _ft_state):
+            _ft_state = {k[len("module."):]: v for k, v in _ft_state.items()}
+        model.load_state_dict(_ft_state, strict=True)
+        print("Starting a fresh fine-tuning run from epoch 1.")
+    else:
+        print("Starting training from scratch / ImageNet-pretrained initialization.")
+
     _opt_name = getattr(config, "OPTIMIZER_NAME", "adam").lower()
     _wd       = getattr(config, "WEIGHT_DECAY", 1e-5)
     if _opt_name == "adam":

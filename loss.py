@@ -47,22 +47,32 @@ class AsymmetricLoss(nn.Module):
         Returns:
             Scalar loss value (mean over batch and classes).
         """
-        xs_pos = torch.sigmoid(logits)           # p  — probability of positive
-        xs_neg = 1.0 - xs_pos                    # 1-p — probability of negative
+        # Cast to fp32: under AMP autocast, fp16 sigmoid can saturate to exactly
+        # 0 or 1, causing log(0) = -Inf → NaN. This is especially likely when
+        # fine-tuning from a checkpoint whose logits have large magnitudes.
+        logits  = logits.float()
+        targets = targets.float()
 
-        # Shift negative probability up by `clip` and clamp to [0, 1].
-        # This raises the effective threshold for counting a negative as "hard",
-        # ignoring very easy negatives and reducing their gradient contribution.
+        xs_pos = torch.sigmoid(logits)
+        xs_neg = 1.0 - xs_pos
+
+        # Shift negative probability up by `clip` to suppress easy negatives,
+        # then clamp to [eps, 1-eps] to prevent log(0) or log(1).
         if self.clip > 0:
-            xs_neg = (xs_neg + self.clip).clamp(max=1.0)
+            xs_neg = (xs_neg + self.clip).clamp(min=self.eps, max=1.0 - self.eps)
+        else:
+            xs_neg = xs_neg.clamp(min=self.eps, max=1.0 - self.eps)
 
-        # Standard binary log-likelihood terms
-        los_pos = targets       * torch.log(xs_pos.clamp(min=self.eps))
-        los_neg = (1 - targets) * torch.log(xs_neg.clamp(min=self.eps))
+        # Double-sided clamping: prevents NaN from log(0) when xs_pos saturates
+        # to 0 or 1 in fp16 during fine-tuning from a pre-trained checkpoint.
+        xs_pos = xs_pos.clamp(min=self.eps, max=1.0 - self.eps)
+
+        los_pos = targets       * torch.log(xs_pos)
+        los_neg = (1 - targets) * torch.log(xs_neg)
         loss    = los_pos + los_neg
 
         # Asymmetric focal weighting: reduce contribution of easy samples.
-        # pt is the model's probability for the correct class.
+        # pt is the model's effective probability for the correct class.
         if self.gamma_neg > 0 or self.gamma_pos > 0:
             pt      = xs_pos * targets + xs_neg * (1.0 - targets)
             gamma   = self.gamma_pos * targets + self.gamma_neg * (1.0 - targets)

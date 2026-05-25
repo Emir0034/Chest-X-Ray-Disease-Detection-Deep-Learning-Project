@@ -1,25 +1,46 @@
-# Dataset
-data/
+# ── Claude / local assistant files ─────────────────────────
+.claude/
 
-# Model checkpoints and weights
-checkpoints/
+# ── Python cache ───────────────────────────────────────────
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.ipynb_checkpoints/
+
+# ── Data files ─────────────────────────────────────────────
+data/
+*.zip
+*.tar
+*.tar.gz
+*.7z
+*.rar
+
+# ── Model checkpoints / large outputs ─────────────────────
 results/checkpoints/
+results/trials/
 *.pth
 *.pt
 *.ckpt
 
-# Python cache
-__pycache__/
-*.pyc
+# ── Optional: ignore generated logs ────────────────────────
+logs/
+*.log
 
-# Virtual environments
-.venv/
+# ── Python environments ────────────────────────────────────
 venv/
+.venv/
 env/
+ENV/
+.env
+*.egg-info/
 
-# System files
+# ── IDE / editor files ─────────────────────────────────────
+.vscode/
+.idea/
+
+# ── OS files ───────────────────────────────────────────────
 .DS_Store
 Thumbs.db
-
-# Claude local settings
-.claude/
+desktop.ini
