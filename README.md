@@ -21,7 +21,7 @@ Multi-label classification of 14 chest diseases from frontal X-ray images using 
 
 **NIH ChestX-ray14** — 112,120 frontal-view chest X-rays with 14 disease labels extracted via NLP from radiology reports. Each image may have zero or more labels (multi-label format).
 
-Download the dataset from the [NIH Clinical Center](https://nihcc.app.box.com/v/ChestXray-NIHCC) and place images under `data/NIH Chest X-rays/`. The label CSV (`Data_Entry_2017.csv`) should also be placed there.
+Download the dataset from the [NIH Chest X-rays](https://www.kaggle.com/datasets/nih-chest-xrays/data) and place images under `data/NIH Chest X-rays/`. The label CSV (`Data_Entry_2017.csv`) should also be placed there.
 
 Patient-level splits (70% train / 15% val / 15% test) are generated automatically and saved to `splits/` on first run.
 

@@ -54,3 +54,9 @@ report/
 *.out
 *.toc
 *.pdf
+
+# Unwanted files
+.claude/
+LaTeXAuthor_Guidelines_for_Proceedings.pdf
+report.zip
+CHANGES.md
