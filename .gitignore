@@ -44,3 +44,13 @@ ENV/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Report (LaTeX)
+report/
+*.tex
+*.bib
+*.aux
+*.log
+*.out
+*.toc
+*.pdf

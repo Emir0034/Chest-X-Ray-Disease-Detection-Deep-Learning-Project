@@ -229,15 +229,11 @@ The following are not tracked in this repository:
 
 ## References
 
-This project builds on the following work:
-
-- **CheXNet** — Rajpurkar et al. (2017). Radiologist-level pneumonia detection using DenseNet121.
-- **NIH ChestX-ray14** — Wang et al., CVPR 2017.
-- **DenseNet** — Huang et al., CVPR 2017.
-- **CBAM** — Woo et al., ECCV 2018.
-- **Asymmetric Loss** — Ridnik et al., ICCV 2021.
-- **Focal Loss** — Lin et al., ICCV 2017.
-- **AdamW** — Loshchilov & Hutter, ICLR 2019.
+- Rajpurkar et al. (2017). CheXNet. arXiv:1711.05225
+- Wang et al. (2017). NIH ChestX-ray14. CVPR.
+- Woo et al. (2018). CBAM. ECCV.
+- Ridnik et al. (2021). Asymmetric Loss. ICCV.
+- Al-Saggaf et al. (2025). Multi-Label CXR Classification. Bioengineering.
 
 ---
 

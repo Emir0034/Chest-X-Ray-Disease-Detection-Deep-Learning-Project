@@ -179,6 +179,11 @@ def main() -> None:
         print(f"FAAR alpha : init={getattr(config, 'FAAR_ALPHA_INIT', 0.0)}")
     print(f"Optimizer  : {getattr(config, 'OPTIMIZER_NAME', 'adam').upper()}")
     print(f"Weight Decay: {getattr(config, 'WEIGHT_DECAY', 1e-5)}")
+    _sched_name = getattr(config, "SCHEDULER_NAME", "plateau")
+    print(f"Scheduler  : {_sched_name}")
+    if _sched_name == "cosine":
+        print(f"  T_max    : {getattr(config, 'COSINE_T_MAX', 10)}")
+        print(f"  eta_min  : {getattr(config, 'COSINE_ETA_MIN', 1e-6)}")
     _ft_display = getattr(config, "FINE_TUNE_FROM_CHECKPOINT", "") or "no"
     print(f"Fine-tune  : {_ft_display}")
     print(f"{'='*60}\n")
@@ -246,9 +251,21 @@ def main() -> None:
         )
     else:
         raise ValueError(f"Unknown optimizer: {config.OPTIMIZER_NAME!r}")
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, mode="max", patience=3, factor=0.5
-    )
+    _sched = getattr(config, "SCHEDULER_NAME", "plateau")
+    if _sched == "plateau":
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer, mode="max", patience=3, factor=0.5
+        )
+    elif _sched == "cosine":
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+            optimizer,
+            T_max=getattr(config, "COSINE_T_MAX", 10),
+            eta_min=getattr(config, "COSINE_ETA_MIN", 1e-6),
+        )
+    else:
+        raise ValueError(
+            f"Unknown SCHEDULER_NAME: {_sched!r}. Must be 'plateau' or 'cosine'."
+        )
     loss_fn = get_loss_fn(
         use_asymmetric=config.USE_ASYMMETRIC_LOSS,
         gamma_neg=config.ASL_GAMMA_NEG,
@@ -282,10 +299,15 @@ def main() -> None:
         position=0,
     )
     for epoch in epoch_bar:
+        _cur_lr = optimizer.param_groups[0]["lr"]
+        print(f"  Epoch {epoch + 1}  LR: {_cur_lr:.2e}")
         train_loss = train_one_epoch(model, train_loader, optimizer, loss_fn, DEVICE, scaler)
         val_loss, avg_auc, per_class_auc = validate(model, val_loader, loss_fn, DEVICE, config.DISEASE_LABELS)
 
-        scheduler.step(avg_auc)
+        if getattr(config, "SCHEDULER_NAME", "plateau") == "cosine":
+            scheduler.step()
+        else:
+            scheduler.step(avg_auc)
 
         history["train_loss"].append(train_loss)
         history["val_loss"].append(val_loss)

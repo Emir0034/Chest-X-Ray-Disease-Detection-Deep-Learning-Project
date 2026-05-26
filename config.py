@@ -26,18 +26,20 @@ DISEASE_LABELS = [
 
 # ── Training hyperparameters ─────────────────────────────────────────────────
 BATCH_SIZE    = 64 # default 32
-LEARNING_RATE = 2e-5 # normalde 1e-4
+LEARNING_RATE = 1e-5 # normalde 1e-4
 NUM_EPOCHS    = 20 # 50
 PATIENCE      = 5       # early stopping patience (epochs without val AUC improvement) | normalde 7 
 NUM_WORKERS   = 12      # default 4 but 0 for more safety starting (şimdilik)
 PIN_MEMORY    = True
 OPTIMIZER_NAME    = "adamw"  # "adam" or "adamw"
 WEIGHT_DECAY      = 1e-5    # normalde 1e-5
+SCHEDULER_NAME    = "cosine"  # "plateau" or "cosine" | "plateau" is the default one 
+COSINE_T_MAX      = 20         # CosineAnnealingLR: number of epochs per cycle
+COSINE_ETA_MIN    = 1e-6       # CosineAnnealingLR: minimum learning rate
 FINE_TUNE_FROM_CHECKPOINT = "results/checkpoints/densenet121_cbam_block34_bce_adamw_best.pth"  # empty = start from scratch / ImageNet-pretrained
                                 # set to a checkpoint path to initialize model weights only
-                                # (optimizer, scheduler, epoch, best AUC are NOT resumed)
                                 # example: "results/checkpoints/densenet121_cbam_block34_bce_adamw_best.pth"
-EXPERIMENT_SUFFIX  = "stage2_from_exp08_asl_lr2e5"       # optional suffix, e.g. "wd1e4" or "lr5e5"
+EXPERIMENT_SUFFIX  = "stage2_from_exp08_asl_lr1e5_cosine"       # optional suffix, e.g. "wd1e4" or "lr5e5"
 # Use "trial" for exploratory runs that should not be treated as official experiments.
 # Use "official" for final documented experiments.
 EXPERIMENT_STATUS  = "trial"  # "official" or "trial"

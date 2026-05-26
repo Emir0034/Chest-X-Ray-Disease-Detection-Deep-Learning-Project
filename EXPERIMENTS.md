@@ -1114,6 +1114,103 @@ Bu dosya her deneyin sonuçlarını, gözlemlerini ve karşılaştırmalarını 
 
 ## Mevcut En İyi Modeller (Current Best Models)
 
-- **Best Mean Test AUC:** Experiment 08 — `densenet121_cbam_block34_bce_adamw`, Mean Test AUC: **0.8371**
-- **Best Recall/F1-oriented:** Experiment 09 — `densenet121_cbam_block34_asl_gn2_gp0_adamw`, Mean Test AUC: 0.8370, Recall: **0.2385**, F1 Score: **0.2736**
+- **Best Mean Test AUC (official):** Experiment 08 — `densenet121_cbam_block34_bce_adamw`, Mean Test AUC: **0.8371**
+- **Best Recall/F1-oriented (official):** Experiment 09 — `densenet121_cbam_block34_asl_gn2_gp0_adamw`, Mean Test AUC: 0.8370, Recall: **0.2385**, F1 Score: **0.2736**
+- **Best trial Recall/F1 observation:** Stage 2 ASL lr1e-5 + cosine trial — Recall: **0.3035**, F1 Score: **0.3115**. Not promoted to official because Mean Test AUC (0.8343) and Precision (0.3418) decreased compared with Experiments 08 and 09. See Trial Observations section below.
 - **Note:** Experiment 10 (Focal Loss gamma2, `densenet121_cbam_block34_focal_gamma2_adamw`, Mean Test AUC 0.8351) did not improve over Experiment 08 or Experiment 09.
+
+---
+
+## Trial Gözlemleri (Trial Observations)
+
+Trial runs are exploratory. They are not official numbered experiments and do not replace the current best models.
+
+---
+
+### Stage 2 ASL fine-tuning from Experiment 08 — lr=1e-5 + CosineAnnealingLR
+
+- **Experiment Name:** `densenet121_cbam_block34_asl_gn2_gp0_adamw_stage2_from_exp08_asl_lr1e5_cosine_trial`
+- **Status:** Trial only — not promoted to official.
+- **Purpose:** Test whether initializing from the best BCE+AdamW model (Experiment 08) and fine-tuning with ASL at a lower learning rate and cosine annealing could improve Recall/F1 while preserving AUC.
+- **Config:**
+  - Base model: DenseNet121
+  - Initialization checkpoint: `results/checkpoints/densenet121_cbam_block34_bce_adamw_best.pth`
+  - USE_CLAHE = False
+  - USE_CBAM = True
+  - CBAM_PLACEMENT = "block34"
+  - USE_FAAR = False
+  - USE_ASYMMETRIC_LOSS = True
+  - ASL_GAMMA_NEG = 2.0
+  - ASL_GAMMA_POS = 0.0
+  - ASL_CLIP = 0.05
+  - USE_FOCAL_LOSS = False
+  - Optimizer: AdamW
+  - WEIGHT_DECAY = 1e-5
+  - LEARNING_RATE = 1e-5
+  - Scheduler: CosineAnnealingLR
+  - COSINE_T_MAX = 20
+  - COSINE_ETA_MIN = 1e-6
+  - BATCH_SIZE = 64
+  - NUM_EPOCHS = 20
+  - PATIENCE = 5
+  - Trial output directory: `results/trials/`
+- **Eğitim Sonuçları (Val):**
+  - Best Val AUC: 0.8336
+  - Best Epoch: 1
+  - Early stopping triggered at epoch 6
+  - Final epoch shown (epoch 6): Train Loss 0.6472 | Val Loss 0.9839 | Val AUC 0.8136
+- **Test Sonuçları (evaluate.py):**
+  - Checkpoint: `results/trials/checkpoints/densenet121_cbam_block34_asl_gn2_gp0_adamw_stage2_from_exp08_asl_lr1e5_cosine_trial_best.pth`
+  - Trained to epoch: 1 | Validation AUC of selected checkpoint: 0.8336
+  - Mean Test AUC: 0.8343
+  - Precision: 0.3418
+  - Recall: 0.3035
+  - F1 Score: 0.3115
+  - Threshold: 0.5
+  - Per-class Test AUC:
+
+    | Class | Test AUC |
+    |---|---:|
+    | Atelectasis | 0.8174 |
+    | Cardiomegaly | 0.9036 |
+    | Effusion | 0.8859 |
+    | Infiltration | 0.7108 |
+    | Mass | 0.8468 |
+    | Nodule | 0.7560 |
+    | Pneumonia | 0.7620 |
+    | Pneumothorax | 0.8847 |
+    | Consolidation | 0.7968 |
+    | Edema | 0.9089 |
+    | Emphysema | 0.9236 |
+    | Fibrosis | 0.8074 |
+    | Pleural_Thickening | 0.7882 |
+    | Hernia | 0.8880 |
+
+- **Dosyalar (Trial):**
+  - Curves PNG: `results/trials/figures/densenet121_cbam_block34_asl_gn2_gp0_adamw_stage2_from_exp08_asl_lr1e5_cosine_trial_curves.png`
+  - Loss CSV: `results/trials/metrics/densenet121_cbam_block34_asl_gn2_gp0_adamw_stage2_from_exp08_asl_lr1e5_cosine_trial_loss_history.csv`
+  - Val AUC CSV: `results/trials/metrics/densenet121_cbam_block34_asl_gn2_gp0_adamw_stage2_from_exp08_asl_lr1e5_cosine_trial_val_auc_history.csv`
+  - Best Epoch JSON: `results/trials/metrics/densenet121_cbam_block34_asl_gn2_gp0_adamw_stage2_from_exp08_asl_lr1e5_cosine_trial_best_epoch.json`
+  - Test AUC CSV: `results/trials/metrics/densenet121_cbam_block34_asl_gn2_gp0_adamw_stage2_from_exp08_asl_lr1e5_cosine_trial_test_auc_per_class.csv`
+  - Test Summary CSV: `results/trials/metrics/densenet121_cbam_block34_asl_gn2_gp0_adamw_stage2_from_exp08_asl_lr1e5_cosine_trial_test_summary.csv`
+  - Test Metrics JSON: `results/trials/metrics/densenet121_cbam_block34_asl_gn2_gp0_adamw_stage2_from_exp08_asl_lr1e5_cosine_trial_test_metrics.json`
+  - Test AUC Bar PNG: `results/trials/figures/densenet121_cbam_block34_asl_gn2_gp0_adamw_stage2_from_exp08_asl_lr1e5_cosine_trial_test_auc_bar.png`
+- **Comparison with previous Stage 2 lr2e-5 trial** (`densenet121_cbam_block34_asl_gn2_gp0_adamw_stage2_from_exp08_asl_lr2e5_trial`):
+  - Previous lr2e-5: Mean Test AUC 0.8320 | Precision 0.3528 | Recall 0.2944 | F1 0.3083
+  - lr1e-5 cosine (this trial): Mean Test AUC 0.8343 (+0.0023) | Precision 0.3418 (−0.0110) | Recall 0.3035 (+0.0091) | F1 0.3115 (+0.0032)
+  - lr1e-5 with cosine annealing improved Mean Test AUC, Recall, and F1 slightly over the lr2e-5 plateau trial.
+- **Comparison with Experiment 08** (`densenet121_cbam_block34_bce_adamw`, Mean Test AUC 0.8371):
+  - Mean Test AUC: −0.0028 | Precision: −0.1064 | Recall: +0.1640 | F1: +0.1153
+- **Comparison with Experiment 09** (`densenet121_cbam_block34_asl_gn2_gp0_adamw`, Mean Test AUC 0.8370):
+  - Mean Test AUC: −0.0027 | Precision: −0.0447 | Recall: +0.0650 | F1: +0.0379
+- **Gözlemler:**
+  - This trial achieved the highest Recall (0.3035) and F1 (0.3115) among all tested runs so far.
+  - Compared with the previous Stage 2 lr2e-5 trial, using lr1e-5 with cosine annealing improved Mean Test AUC, Recall, and F1 slightly.
+  - The best checkpoint was selected at epoch 1, and validation AUC decreased afterward, suggesting that ASL fine-tuning quickly pushes the model toward a more recall-oriented but less AUC/precision-balanced behavior.
+  - Mean Test AUC (0.8343) is lower than Experiment 08 (0.8371) and Experiment 09 (0.8370), and Precision (0.3418) is substantially lower than Experiment 08 (0.4482).
+  - Because this result trades away too much AUC and Precision, it remains a trial observation and does not replace the official final models.
+- **Decision:**
+  - Keep as trial observation only.
+  - Do not promote to an official numbered experiment.
+  - Experiment 08 remains the best official Mean Test AUC model.
+  - Experiment 09 remains the best official Recall/F1-oriented model.
