@@ -1,4 +1,4 @@
-\section{Conclusion and Future Work}
+\section{Conclusion}
 
 This work presented a systematic ablation study of DenseNet121-based multi-label chest X-ray disease classification on NIH ChestX-ray14.
 We evaluated the effects of CLAHE preprocessing, CBAM attention at three insertion points, three loss functions (BCE, ASL, Focal Loss), and two optimizers (Adam and AdamW) across ten experimental configurations.
@@ -19,11 +19,7 @@ The key findings are:
 
 Several directions could extend this study:
 \begin{itemize}
-  \item \textbf{Class-specific threshold tuning}: optimizing per-class decision thresholds on the validation set could improve Precision--Recall balance for each disease.
-  \item \textbf{External validation}: evaluating the models on an independent dataset (e.g., CheXpert, MIMIC-CXR) would assess generalization beyond NIH ChestX-ray14.
-  \item \textbf{Model calibration}: Platt scaling or temperature calibration could align predicted probabilities with empirical event rates.
-  \item \textbf{Ensemble approaches}: combining Exp~08 and Exp~09 predictions may yield improved performance on both AUC and Recall objectives.
-  \item \textbf{Alternative backbones}: testing EfficientNet, ResNet-based models, or vision transformer architectures could reveal whether the observed trends generalize beyond DenseNet121.
-  \item \textbf{Label noise handling}: methods designed for noisy multi-label annotations may improve performance given the known NLP-extracted label noise in ChestX-ray14.
-  \item \textbf{Localization evaluation}: if bounding box annotations are available (e.g., from the NIH localization subset), formal localization accuracy could be evaluated alongside Grad-CAM qualitative observations.
+    \item \textbf{Class-specific threshold tuning:} optimizing per-class decision thresholds on the validation set could improve the Precision--Recall balance for each disease.
+    \item \textbf{External validation:} evaluating the models on independent datasets such as CheXpert or MIMIC-CXR would provide a stronger assessment of generalization beyond NIH ChestX-ray14.
+    \item \textbf{Alternative backbones:} testing architectures such as EfficientNet, ResNet variants, or vision transformers could show whether the observed trends generalize beyond DenseNet121.
 \end{itemize}

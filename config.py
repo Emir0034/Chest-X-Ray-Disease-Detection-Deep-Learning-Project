@@ -42,7 +42,7 @@ FINE_TUNE_FROM_CHECKPOINT = "results/checkpoints/densenet121_cbam_block34_bce_ad
 EXPERIMENT_SUFFIX  = "stage2_from_exp08_asl_lr1e5_cosine"       # optional suffix, e.g. "wd1e4" or "lr5e5"
 # Use "trial" for exploratory runs that should not be treated as official experiments.
 # Use "official" for final documented experiments.
-EXPERIMENT_STATUS  = "trial"  # "official" or "trial"
+EXPERIMENT_STATUS  = "official"  # "official" or "trial"
 if EXPERIMENT_STATUS not in ("official", "trial"):
     raise ValueError(
         f"EXPERIMENT_STATUS must be 'official' or 'trial', got {EXPERIMENT_STATUS!r}."

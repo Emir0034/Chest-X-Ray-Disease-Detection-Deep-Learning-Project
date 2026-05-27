@@ -23,12 +23,12 @@ Horizontal flips are \emph{not} applied, as left-right asymmetry carries diagnos
 All images are normalized using ImageNet mean and standard deviation.
 At validation and test time, only resize and normalization are applied.
 
-\textbf{CLAHE} (Contrast-Limited Adaptive Histogram Equalization~\cite{pizer1987clahe}) was evaluated as an optional preprocessing step in Experiments 02--05.
+\textbf{CLAHE} (Contrast-Limited Adaptive Histogram Equalization) was evaluated as an optional preprocessing step in Experiments 02--05.
 When enabled, it is applied per-image to the grayscale channel before RGB conversion.
 
 \subsection{Model Architecture}
 
-The backbone is DenseNet121~\cite{huang2017densenet} pretrained on ImageNet.
+The backbone is DenseNet121~\cite{rajpurkar2017chexnet} pretrained on ImageNet.
 The original 1000-class classifier head is replaced with a single linear layer mapping the 1024-dimensional global average pooled features to 14 output logits.
 No sigmoid is applied inside the model; sigmoid probabilities are computed externally during evaluation.
 
@@ -59,7 +59,7 @@ All models are trained for up to 50 epochs with:
   \item Learning rate: $1{\times}10^{-4}$
   \item Weight decay: $1{\times}10^{-5}$
   \item Batch size: 64
-  \item Optimizer: Adam or AdamW~\cite{loshchilov2019adamw,paszke2019pytorch}
+  \item Optimizer: Adam or AdamW
   \item Scheduler: ReduceLROnPlateau (factor $0.1$, patience $3$) on validation AUC
   \item Early stopping: patience $7$ epochs on validation AUC
   \item Mixed-precision training (AMP) with gradient scaling
@@ -79,6 +79,6 @@ Experiments 01--06 use Adam; Experiments 07--10 compare Adam (Exp~07) and AdamW 
 
 \subsection{Grad-CAM Visualization}
 
-Gradient-weighted Class Activation Mapping (Grad-CAM)~\cite{selvaraju2017gradcam} is computed by hooking the gradient of the target class score with respect to the activations of \texttt{denseblock4}.
+Gradient-weighted Class Activation Mapping (Grad-CAM) is computed by hooking the gradient of the target class score with respect to the activations of \texttt{denseblock4}.
 The resulting heatmap is upsampled to the input image resolution and overlaid for visual inspection.
 Grad-CAM is computed separately for Experiment~08 and Experiment~09 on selected positive test examples.

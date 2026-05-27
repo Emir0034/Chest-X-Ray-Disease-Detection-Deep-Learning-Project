@@ -77,33 +77,50 @@ These difficult classes tend to have higher prevalence or greater visual overlap
 
 \subsection{Grad-CAM Qualitative Analysis}
 
-Grad-CAM~\cite{selvaraju2017gradcam} visualizations were generated for selected positive test examples to qualitatively inspect the image regions contributing to model predictions.
-Figure~\ref{fig:gradcam_hernia} shows overlays for a positive Hernia test image.
+Grad-CAM visualizations were generated for selected positive test examples to qualitatively inspect the image regions contributing to model predictions.
+Each comparison shows, from left to right: the original image, the Grad-CAM overlay from Experiment~08 (BCE + AdamW), and the overlay from Experiment~09 (ASL + AdamW).
 
 \textbf{Grad-CAM visualizations provide qualitative insight into model behavior, but they should not be interpreted as definitive localization evidence.}
-The predicted probabilities for this example differ substantially between the two models (Exp~08: $p = 0.04$; Exp~09: $p = 0.33$), reflecting the recall-oriented behavior of ASL.
+
+Figure~\ref{fig:gradcam_hernia} shows overlays for a positive Hernia test image.
+The predicted probabilities differ substantially between the two models (Exp~08: $p = 0.04$; Exp~09: $p = 0.33$), reflecting the recall-oriented behavior of ASL.
 
 \begin{figure}[H]
   \centering
   \includegraphics[width=\linewidth]{figures/hernia_example_01_comparison.png}
-  \caption{Grad-CAM overlays for a positive Hernia test example.
+  \caption{Grad-CAM comparison for a positive Hernia test example.
     \textit{Left}: original image.
-    \textit{Center}: Experiment~08 heatmap (predicted probability 0.04).
-    \textit{Right}: Experiment~09 heatmap (predicted probability 0.33).
-    Experiment~09 (ASL) activates a broader and more prominent region.
-    These are qualitative observations only.}
+    \textit{Center}: Experiment~08 (BCE + AdamW), predicted probability 0.04.
+    \textit{Right}: Experiment~09 (ASL + AdamW), predicted probability 0.33.
+    Experiment~09 activates a broader and more prominent region.
+    Qualitative observation only.}
   \label{fig:gradcam_hernia}
 \end{figure}
 
-Figure~\ref{fig:gradcam_mass} shows the Experiment~09 Grad-CAM overlay for a positive Mass test example.
+Figure~\ref{fig:gradcam_mass} shows side-by-side overlays for a positive Mass test example.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.75\linewidth]{figures/mass_example_01_exp09_overlay.png}
-  \caption{Grad-CAM overlay for a positive Mass test example from Experiment~09.
-    The model attends to the central lung region.
+  \includegraphics[width=\linewidth]{figures/mass_example_03_comparison.png}
+  \caption{Grad-CAM comparison for a positive Mass test example.
+    \textit{Left}: original image.
+    \textit{Center}: Experiment~08 (BCE + AdamW) overlay.
+    \textit{Right}: Experiment~09 (ASL + AdamW) overlay.
     Qualitative observation only; not to be interpreted as localization.}
   \label{fig:gradcam_mass}
+\end{figure}
+
+Figure~\ref{fig:gradcam_edema} shows side-by-side overlays for a positive Edema test example.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\linewidth]{figures/edema_example_02_comparison.png}
+  \caption{Grad-CAM comparison for a positive Edema test example.
+    \textit{Left}: original image.
+    \textit{Center}: Experiment~08 (BCE + AdamW) overlay.
+    \textit{Right}: Experiment~09 (ASL + AdamW) overlay.
+    Qualitative observation only; not to be interpreted as localization.}
+  \label{fig:gradcam_edema}
 \end{figure}
 
 \subsection{Ablation: CBAM Placement}
