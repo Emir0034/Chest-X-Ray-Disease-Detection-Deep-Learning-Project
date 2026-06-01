@@ -579,20 +579,20 @@ def plot_final_best_models(records):
     for bars in (b1, b2):
         _vbar_labels(ax, bars, fmt=".4f", fontsize=7.5, pad=0.003)
 
-    # Winner annotation below each metric group
-    winners = []
+    winner_text = []
     for v_a, v_b in zip(v08, v09):
-        if np.isnan(v_a) or np.isnan(v_b):
-            winners.append("")
+        if np.isnan(v_a) or np.isnan(v_b) or v_a == v_b:
+            winner_text.append("")
         elif v_a > v_b:
-            winners.append(f"← {exp08['label']}")
-        elif v_b > v_a:
-            winners.append(f"{exp09['label']} →")
+            winner_text.append(f"Higher: Exp {exp08['id']}")
         else:
-            winners.append("tie")
+            winner_text.append(f"Higher: Exp {exp09['id']}")
 
     ax.set_xticks(x)
-    ax.set_xticklabels([f"{m}\n{w_}" for m, w_ in zip(mlabels, winners)], fontsize=8.5)
+    ax.set_xticklabels(
+        [f"{m}\n{w}" if w else m for m, w in zip(mlabels, winner_text)],
+        fontsize=8.5
+    )
     ax.set_ylabel("Score", fontsize=11)
     ax.set_ylim(0, max(max(v for v in v08 + v09 if not np.isnan(v)), 0) + 0.07)
     ax.set_title("Best Models: Exp 08 (BCE+AdamW) vs Exp 09 (ASL+AdamW)", fontsize=12, fontweight="bold")

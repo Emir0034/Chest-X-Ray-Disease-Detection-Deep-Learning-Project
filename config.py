@@ -26,7 +26,7 @@ DISEASE_LABELS = [
 
 # ── Training hyperparameters ─────────────────────────────────────────────────
 BATCH_SIZE    = 64 # default 32
-LEARNING_RATE = 1e-5 # normalde 1e-4
+LEARNING_RATE = 1e-4 # normalde 1e-4
 NUM_EPOCHS    = 20 # 50
 PATIENCE      = 5       # early stopping patience (epochs without val AUC improvement) | normalde 7 
 NUM_WORKERS   = 12      # default 4 but 0 for more safety starting (şimdilik)
