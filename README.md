@@ -136,17 +136,17 @@ Grad-CAM visualizations were generated for selected positive test examples to in
 ├── loss.py                     # AsymmetricLoss, FocalLoss, BCE wrapper
 ├── transforms.py               # CLAHE, train/val augmentation pipelines
 ├── cbam.py                     # CBAM channel + spatial attention modules
-├── faar.py                     # FAAR frequency-aware attention module (experimental)
+├── faar.py                     # FAAR frequency-aware attention module
 ├── utils.py                    # Seeding, checkpoint I/O, AUC computation, plotting
 ├── splits/                     # Auto-generated patient-level CSV splits
 │   ├── train_split.csv
 │   ├── val_split.csv
 │   └── test_split.csv
-├── results/
-│   ├── checkpoints/            # Official model checkpoints
-│   ├── metrics/                # CSV and JSON metrics for all experiments
-│   ├── figures/                # Training curves, AUC bar charts, comparisons
-│   └── trials/                 # Trial run outputs (isolated from official results)
+└── results/
+    ├── checkpoints/            # Official model checkpoints
+    ├── metrics/                # CSV and JSON metrics for all experiments
+    ├── figures/                # Training curves, AUC bar charts, comparisons
+    └── trials/                 # Trial run outputs (isolated from official results)
 
 ```
 
