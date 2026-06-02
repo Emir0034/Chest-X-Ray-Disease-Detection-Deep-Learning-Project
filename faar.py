@@ -2,29 +2,8 @@ import torch
 import torch.nn as nn
 
 
+# Frequency-Aware Attention Refinement
 class FAAR(nn.Module):
-    """Frequency-Aware Attention Refinement.
-
-    Modulates the 1024-channel feature map produced by DenseNet121 using
-    inverse class-frequency weights. A linear projection maps the frequency
-    vector (one value per disease class) to per-channel scale factors, then
-    applies a residual scaling controlled by a learnable scalar alpha.
-
-    When alpha=0.0 (the default initialisation), the module is an exact
-    identity — the first training step starts from the same point as a model
-    without FAAR, and alpha is learned from there.
-
-    Args:
-        num_classes:   Number of disease classes (must match len(freq_weights)).
-        num_channels:  Number of feature-map channels to modulate (1024 for DenseNet121).
-        freq_weights:  1-D tensor of length num_classes containing pre-computed
-                       inverse-frequency weights for each class. Registered as a
-                       non-trainable buffer.
-        alpha_init:    Initial value for the learnable residual scale (default 0.0).
-
-    Raises:
-        ValueError: If freq_weights is None or its length != num_classes.
-    """
 
     def __init__(
         self,
@@ -51,14 +30,7 @@ class FAAR(nn.Module):
         self.alpha = nn.Parameter(torch.tensor(float(alpha_init)))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Apply frequency-aware residual scaling.
 
-        Args:
-            x: Feature map, shape [B, C, H, W].
-
-        Returns:
-            Scaled feature map of the same shape.
-        """
         scale = torch.sigmoid(self.fc(self.freq_weights))   # [num_channels]
         scale = scale.view(1, -1, 1, 1)                     # [1, C, 1, 1]
         return x * (1.0 + self.alpha * scale)

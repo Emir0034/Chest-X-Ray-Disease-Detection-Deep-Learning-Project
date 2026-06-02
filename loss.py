@@ -4,25 +4,6 @@ import torch.nn.functional as F
 
 
 class AsymmetricLoss(nn.Module):
-    """Asymmetric Loss for multi-label classification.
-
-    Addresses class imbalance by treating positive and negative samples
-    asymmetrically:
-      - Positive samples use a soft focal weight with gamma_pos (default 1).
-      - Negative samples use a stronger focal weight with gamma_neg (default 4),
-        and their probability is shifted upward by `clip` before the log,
-        which suppresses easy negatives (abundant "No Finding" samples).
-
-    Reference: Ben-Baruch et al., "Asymmetric Loss For Multi-Label Classification",
-               ICCV 2021.
-
-    Args:
-        gamma_neg: Focusing parameter for negative samples (default 4).
-        gamma_pos: Focusing parameter for positive samples (default 1).
-        clip:      Probability margin added to negative probabilities before log,
-                   to shift and ignore easy negatives (default 0.05).
-        eps:       Small constant for numerical stability in log (default 1e-8).
-    """
 
     def __init__(
         self,
@@ -38,41 +19,27 @@ class AsymmetricLoss(nn.Module):
         self.eps       = eps
 
     def forward(self, logits: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
-        """Compute asymmetric loss.
 
-        Args:
-            logits:  Raw model outputs, shape (B, C). No sigmoid applied yet.
-            targets: Float binary labels, shape (B, C), values in {0.0, 1.0}.
-
-        Returns:
-            Scalar loss value (mean over batch and classes).
-        """
-        # Cast to fp32: under AMP autocast, fp16 sigmoid can saturate to exactly
-        # 0 or 1, causing log(0) = -Inf → NaN. This is especially likely when
-        # fine-tuning from a checkpoint whose logits have large magnitudes.
         logits  = logits.float()
         targets = targets.float()
 
         xs_pos = torch.sigmoid(logits)
         xs_neg = 1.0 - xs_pos
 
-        # Shift negative probability up by `clip` to suppress easy negatives,
-        # then clamp to [eps, 1-eps] to prevent log(0) or log(1).
+        # Shift and clamp negative probabilities
         if self.clip > 0:
             xs_neg = (xs_neg + self.clip).clamp(min=self.eps, max=1.0 - self.eps)
         else:
             xs_neg = xs_neg.clamp(min=self.eps, max=1.0 - self.eps)
 
-        # Double-sided clamping: prevents NaN from log(0) when xs_pos saturates
-        # to 0 or 1 in fp16 during fine-tuning from a pre-trained checkpoint.
+        # Clamp positive probabilities
         xs_pos = xs_pos.clamp(min=self.eps, max=1.0 - self.eps)
 
         los_pos = targets       * torch.log(xs_pos)
         los_neg = (1 - targets) * torch.log(xs_neg)
         loss    = los_pos + los_neg
 
-        # Asymmetric focal weighting: reduce contribution of easy samples.
-        # pt is the model's effective probability for the correct class.
+        # Asymmetric focal weighting
         if self.gamma_neg > 0 or self.gamma_pos > 0:
             pt      = xs_pos * targets + xs_neg * (1.0 - targets)
             gamma   = self.gamma_pos * targets + self.gamma_neg * (1.0 - targets)
@@ -109,11 +76,6 @@ def get_loss_fn(
     focal_gamma: float = 2.0,
     focal_alpha=None,
 ) -> nn.Module:
-    """Return the loss function for the current experiment.
-
-    Priority: AsymmetricLoss > FocalLoss > BCEWithLogitsLoss.
-    All variants accept raw logits and float targets.
-    """
     if use_asymmetric:
         return AsymmetricLoss(gamma_neg=gamma_neg, gamma_pos=gamma_pos, clip=clip)
     if use_focal:

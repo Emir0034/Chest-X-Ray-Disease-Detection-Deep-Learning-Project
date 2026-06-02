@@ -2,8 +2,6 @@
 
 Multi-label classification of 14 chest diseases from frontal X-ray images using DenseNet121 on the NIH ChestX-ray14 dataset. Systematic ablation over CLAHE preprocessing, CBAM attention placement, loss functions (BCE, ASL, Focal Loss), and optimizers (Adam, AdamW).
 
-> **Disclaimer:** This is an academic deep learning course project. It is not intended for clinical use and should not be interpreted as radiologist-level performance or as evidence of clinical readiness.
-
 ---
 
 ## Project Overview
@@ -138,15 +136,11 @@ Grad-CAM visualizations were generated for selected positive test examples to in
 ├── cbam.py                     # CBAM channel + spatial attention modules
 ├── faar.py                     # FAAR frequency-aware attention module
 ├── utils.py                    # Seeding, checkpoint I/O, AUC computation, plotting
+├── requirements.txt
 ├── splits/                     # Auto-generated patient-level CSV splits
-│   ├── train_split.csv
-│   ├── val_split.csv
-│   └── test_split.csv
-└── results/
-    ├── checkpoints/            # Official model checkpoints
-    ├── metrics/                # CSV and JSON metrics for all experiments
-    ├── figures/                # Training curves, AUC bar charts, comparisons
-    └── trials/                 # Trial run outputs (isolated from official results)
+    ├── train_split.csv
+    ├── val_split.csv
+    └── test_split.csv
 
 ```
 
@@ -156,11 +150,8 @@ Grad-CAM visualizations were generated for selected positive test examples to in
 
 ### 1. Install dependencies
 
-No `requirements.txt` is provided. Install the required packages manually:
-
 ```bash
-pip install torch torchvision
-pip install pandas scikit-learn matplotlib opencv-python Pillow numpy tqdm
+pip install -r requirements.txt
 ```
 
 ### 2. Configure the experiment
@@ -177,14 +168,14 @@ Edit `config.py` to set:
 ```bash
 python train.py
 ```
-
-Checkpoints are saved to `results/checkpoints/`. Metrics are saved to `results/metrics/`.
+Training saves checkpoints and metrics under a generated results/ folder.
 
 ### 4. Evaluate
 
 ```bash
 python evaluate.py
 ```
+Evaluation requires a trained checkpoint under results/checkpoints/. Metrics are saved under results/metrics/.
 
 Loads the best checkpoint for the current `config.py` configuration and evaluates on the test split. Saves per-class AUC, summary CSV, and full metrics JSON.
 

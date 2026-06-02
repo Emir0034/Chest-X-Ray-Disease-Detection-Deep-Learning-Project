@@ -10,18 +10,8 @@ import config
 from transforms import get_train_transforms, get_val_transforms
 
 
+# Convert "DiseaseA|DiseaseB" -> multi-hot float tensor of shape (14,)
 def encode_labels(finding_labels: str, disease_labels: list) -> torch.Tensor:
-    """Convert a pipe-separated NIH finding string to a multi-hot float tensor.
-
-    "No Finding" or an empty string → all-zero vector.
-
-    Args:
-        finding_labels: e.g. "Atelectasis|Effusion" or "No Finding"
-        disease_labels: ordered list of 14 class names from config.DISEASE_LABELS
-
-    Returns:
-        FloatTensor of shape (14,) with 1.0 at each present disease index.
-    """
     label_vec = torch.zeros(len(disease_labels), dtype=torch.float32)
     if not isinstance(finding_labels, str) or finding_labels.strip() == "No Finding":
         return label_vec
@@ -32,15 +22,13 @@ def encode_labels(finding_labels: str, disease_labels: list) -> torch.Tensor:
     return label_vec
 
 
+# Extract patient ID from filename: "00000001_000.png" -> "00000001"
 def extract_patient_id(image_index: str) -> str:
-    """Extract patient ID from an NIH image filename.
-
-    NIH filenames follow the pattern: <PatientID>_<ImageIndex>.png
-    e.g. "00000001_000.png" → "00000001"
-    """
     return image_index.split("_")[0]
 
 
+# Create or load patient-level train / val / test splits
+# train=70%, val=15%, test=15% 
 def create_patient_splits(
     csv_path: str,
     split_dir: str,
@@ -48,31 +36,12 @@ def create_patient_splits(
     val_ratio: float = 0.15,
     seed: int = 42,
 ) -> tuple:
-    """Create (or load) patient-level train / val / test splits.
 
-    Patient-level splitting ensures no patient appears in more than one split,
-    preventing data leakage between training and evaluation sets.
-
-    If split CSVs already exist in split_dir, they are loaded directly so all
-    experiments use the exact same split.
-
-    Split ratios: train=70%, val=15%, test=15% (remaining after train+val).
-
-    Args:
-        csv_path:    Path to Data_Entry_2017.csv.
-        split_dir:   Directory where train/val/test CSV files are saved.
-        train_ratio: Fraction of patients assigned to training.
-        val_ratio:   Fraction of patients assigned to validation.
-        seed:        Random seed for reproducible shuffling.
-
-    Returns:
-        (train_df, val_df, test_df) as pandas DataFrames.
-    """
     train_path = os.path.join(split_dir, "train_split.csv")
     val_path   = os.path.join(split_dir, "val_split.csv")
     test_path  = os.path.join(split_dir, "test_split.csv")
 
-    # Return existing splits to keep all experiments comparable.
+    #  Load existing splits to keep all experiments comparable if available, otherwise create new ones
     if os.path.exists(train_path) and os.path.exists(val_path) and os.path.exists(test_path):
         print(f"[dataset] Loading existing splits from {split_dir}")
         return (
@@ -84,7 +53,7 @@ def create_patient_splits(
     print(f"[dataset] Creating new patient-level splits from {csv_path}")
     df = pd.read_csv(csv_path)
 
-    # Use Patient ID column if present; otherwise derive from filename.
+    # Use Patient ID column if present, otherwise derive from filename
     if "Patient ID" in df.columns:
         df["_pid"] = df["Patient ID"].astype(str)
     else:
@@ -118,13 +87,9 @@ def create_patient_splits(
     return train_df, val_df, test_df
 
 
+# Store all file paths in a dict for fast access O(1)
 def _build_path_index(images_dir: str) -> dict:
-    """Recursively scan images_dir and return a dict mapping filename → full path.
 
-    Works for both flat layouts (all PNGs in one directory) and the original
-    NIH download layout (images_001/images/, images_002/images/, …).
-    The index is built once at Dataset construction, so __getitem__ is O(1).
-    """
     index = {}
     for dirpath, _, filenames in os.walk(images_dir):
         for fname in filenames:
@@ -133,18 +98,8 @@ def _build_path_index(images_dir: str) -> dict:
     return index
 
 
+# Dataset for NIH ChestX-ray14 multi-label classification
 class ChestXRayDataset(Dataset):
-    """PyTorch Dataset for NIH ChestX-ray14 multi-label classification.
-
-    Supports both a flat image directory and the original NIH multi-folder
-    layout (images_001/images/ … images_012/images/) via a filename index
-    built once at construction time.
-
-    Args:
-        df:          DataFrame with at least 'Image Index' and 'Finding Labels' columns.
-        images_dir:  Root directory that contains (or whose subdirs contain) PNG files.
-        transform:   torchvision transform pipeline (from transforms.py).
-    """
 
     def __init__(self, df: pd.DataFrame, images_dir: str, transform=None):
         self.df           = df.reset_index(drop=True)
@@ -179,18 +134,8 @@ def get_dataloaders(
     batch_size: int = 32,
     num_workers: int = 4,
 ) -> tuple:
-    """Build DataLoaders for train, validation, and test splits.
 
-    Args:
-        train_df, val_df, test_df: DataFrames from create_patient_splits.
-        images_dir:   Flat directory of PNG images.
-        use_clahe:    Whether to apply CLAHETransform.
-        batch_size:   Samples per batch.
-        num_workers:  Parallel data loading workers.
-
-    Returns:
-        (train_loader, val_loader, test_loader)
-    """
+    # build DataLoaders for train, validation and test splits
     train_dataset = ChestXRayDataset(
         train_df, images_dir,
         transform=get_train_transforms(use_clahe, config.IMAGE_SIZE),

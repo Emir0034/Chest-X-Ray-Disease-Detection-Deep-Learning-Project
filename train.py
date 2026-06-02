@@ -20,7 +20,7 @@ from utils import (
 )
 
 
-# ── Device ───────────────────────────────────────────────────────────────────
+# Device check
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
@@ -73,11 +73,7 @@ def train_one_epoch(
     device: torch.device,
     scaler: torch.cuda.amp.GradScaler,
 ) -> float:
-    """Run one training epoch with mixed-precision AMP.
 
-    Returns:
-        Mean training loss over all batches.
-    """
     model.train()
     total_loss = 0.0
 
@@ -112,11 +108,7 @@ def validate(
     device: torch.device,
     label_names: list,
 ) -> tuple:
-    """Run validation and return loss, average AUC, and per-class AUC.
 
-    Returns:
-        (val_loss, avg_auc, per_class_auc_dict)
-    """
     model.eval()
     all_logits  = []
     all_labels  = []
@@ -147,7 +139,7 @@ def validate(
 
 
 def main() -> None:
-    # ── Setup ────────────────────────────────────────────────────────────────
+    # Setup 
     seed_everything(config.SEED)
 
     for d in [config.CHECKPOINTS_DIR, config.METRICS_DIR, config.FIGURES_DIR]:
@@ -188,7 +180,7 @@ def main() -> None:
     print(f"Fine-tune  : {_ft_display}")
     print(f"{'='*60}\n")
 
-    # ── Data ─────────────────────────────────────────────────────────────────
+    # Dataset
     train_df, val_df, test_df = create_patient_splits(
         csv_path   = config.DATA_CSV,
         split_dir  = config.SPLIT_DIR,
@@ -204,7 +196,7 @@ def main() -> None:
         num_workers = config.NUM_WORKERS,
     )
 
-    # ── Model / optimiser / scheduler ────────────────────────────────────────
+    # Build model and optimizer
     if getattr(config, "USE_FAAR", False):
         fw = _compute_faar_freq_weights(
             train_df,
@@ -217,7 +209,7 @@ def main() -> None:
     else:
         model = build_model(config).to(DEVICE)
 
-    # ── Fine-tune initialization (model weights only) ─────────────────────────
+    # Fine-tuning
     _ft_ckpt = getattr(config, "FINE_TUNE_FROM_CHECKPOINT", "")
     if _ft_ckpt:
         if not os.path.isfile(_ft_ckpt):
@@ -239,6 +231,7 @@ def main() -> None:
     else:
         print("Starting training from scratch / ImageNet-pretrained initialization.")
 
+    # Optimizer, scheduler, loss
     _opt_name = getattr(config, "OPTIMIZER_NAME", "adam").lower()
     _wd       = getattr(config, "WEIGHT_DECAY", 1e-5)
     if _opt_name == "adam":
@@ -277,7 +270,7 @@ def main() -> None:
     )
     scaler  = torch.cuda.amp.GradScaler()
 
-    # ── Training state ────────────────────────────────────────────────────────
+    # Training states
     best_val_auc     = 0.0
     best_epoch       = 0
     patience_counter = 0
@@ -287,10 +280,10 @@ def main() -> None:
         "val_loss":   [],
         "val_auc":    [],
     }
-    # per-class AUC history: list of dicts, one per epoch
+    # save per-class AUC history
     per_class_auc_history = []
 
-    # ── Epoch loop ────────────────────────────────────────────────────────────
+
     epoch_bar = tqdm(
         range(1, config.NUM_EPOCHS + 1),
         desc="Epochs",
@@ -314,7 +307,7 @@ def main() -> None:
         history["val_auc"].append(avg_auc)
         per_class_auc_history.append(per_class_auc)
 
-        # ── Checkpoint saving ─────────────────────────────────────────────────
+        # Save checkpoint
         ckpt_state = {
             "epoch":                epoch,
             "model_state_dict":     model.state_dict(),
@@ -336,7 +329,7 @@ def main() -> None:
         else:
             patience_counter += 1
 
-        # ── Epoch summary line ────────────────────────────────────────────────
+        # print epoch summary
         tqdm.write(
             f"Ep {epoch:03d}/{config.NUM_EPOCHS} | "
             f"TrainL {train_loss:.4f} | ValL {val_loss:.4f} | "
@@ -344,7 +337,7 @@ def main() -> None:
             + ckpt_tag
         )
 
-        # Per-class AUC table every 5 epochs and on the final epoch
+        # print auc table every 5 epoch
         if epoch % 5 == 0 or epoch == config.NUM_EPOCHS:
             tqdm.write(f"\n  {'Class':<22} {'Val AUC':>8}")
             tqdm.write(f"  {'-'*32}")
@@ -359,14 +352,14 @@ def main() -> None:
             tqdm.write(f"\nEarly stopping triggered at epoch {epoch}.")
             break
 
-    # ── Save all training outputs ──────────────────────────────────────────────
+    # save outputs
 
-    # 1. Training curves PNG
+    # Training curves
     curves_path = os.path.join(config.FIGURES_DIR, f"{exp_name}_curves.png")
     plot_training_curves(history, curves_path)
     print(f"\nTraining curves saved: {curves_path}")
 
-    # 2. Train/val loss history CSV
+    # save loss history
     loss_csv_path = os.path.join(config.METRICS_DIR, f"{exp_name}_loss_history.csv")
     loss_df = pd.DataFrame(
         {
@@ -378,7 +371,7 @@ def main() -> None:
     loss_df.to_csv(loss_csv_path, index=False)
     print(f"Loss history CSV saved: {loss_csv_path}")
 
-    # 3. Per-epoch validation AUC history CSV (avg + per-class)
+
     auc_rows = []
     for i, (avg, pc) in enumerate(zip(history["val_auc"], per_class_auc_history), start=1):
         row = {"epoch": i, "avg_auc": avg}
@@ -388,7 +381,7 @@ def main() -> None:
     pd.DataFrame(auc_rows).to_csv(auc_csv_path, index=False)
     print(f"Val AUC history CSV saved: {auc_csv_path}")
 
-    # 4. Best epoch summary JSON
+    # save best epoch 
     best_epoch_path = os.path.join(config.METRICS_DIR, f"{exp_name}_best_epoch.json")
     with open(best_epoch_path, "w") as f:
         json.dump(

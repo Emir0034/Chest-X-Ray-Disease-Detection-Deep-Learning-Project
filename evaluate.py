@@ -19,15 +19,7 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 def _compute_faar_freq_weights(train_df, class_names, mode="inverse", cap_max=3.0):
-    """Compute normalized frequency weights for FAAR from the training split.
 
-    Supports both one-hot column layout and NIH pipe-separated 'Finding Labels'.
-
-    Modes:
-        "inverse"  — 1/(freq+eps), normalized by mean
-        "cap"      — inverse, normalized, capped at cap_max, re-normalized
-        "sqrt_inv" — 1/sqrt(freq+eps), normalized by mean
-    """
     n = len(train_df)
     if all(c in train_df.columns for c in class_names):
         pos = train_df[class_names].values.sum(axis=0).astype(float)
@@ -66,19 +58,7 @@ def evaluate_model(
     label_names: list,
     threshold: float = 0.5,
 ) -> dict:
-    """Run inference on a DataLoader and compute all test metrics.
 
-    Args:
-        model:       Trained ChestXRayModel in eval mode.
-        loader:      Test DataLoader.
-        device:      Compute device.
-        label_names: List of 14 disease class names.
-        threshold:   Decision threshold for Precision / Recall / F1 (default 0.5).
-
-    Returns:
-        metrics dict with keys:
-            avg_auc, per_class_auc, precision, recall, f1, threshold
-    """
     model.eval()
     all_probs  = []
     all_labels = []
@@ -112,24 +92,19 @@ def evaluate_model(
         "threshold":    threshold,
     }
 
-
+# Save horizontal bar chart of per class AUC scores
 def save_auc_bar_chart(per_class_auc: dict, avg_auc: float, save_path: str, exp_name: str) -> None:
-    """Save a horizontal bar chart of per-class AUC scores.
 
-    Classes with undefined AUC (NaN) are shown with a grey bar and labelled N/A.
-    A vertical dashed line marks the average AUC.
-    """
     classes = list(per_class_auc.keys())
     aucs    = [per_class_auc[c] for c in classes]
 
-    # Replace NaN with 0 for plotting; track which are undefined
+    # Replace NaN with 0 for plotting, track which are undefined
     plot_aucs = [a if not np.isnan(a) else 0.0 for a in aucs]
     colors    = ["steelblue" if not np.isnan(a) else "lightgrey" for a in aucs]
 
     fig, ax = plt.subplots(figsize=(8, 7))
     bars = ax.barh(classes, plot_aucs, color=colors, edgecolor="white", height=0.6)
 
-    # Annotate bar values
     for bar, auc in zip(bars, aucs):
         label = f"{auc:.3f}" if not np.isnan(auc) else "N/A"
         ax.text(
@@ -164,15 +139,17 @@ def main() -> None:
     os.makedirs(config.METRICS_DIR, exist_ok=True)
     os.makedirs(config.FIGURES_DIR, exist_ok=True)
 
-    # ── Load splits (train_df needed for FAAR freq_weights) ──────────────────
+    # Load splits
     train_df, _, test_df = create_patient_splits(
         csv_path  = config.DATA_CSV,
         split_dir = config.SPLIT_DIR,
         seed      = config.SEED,
     )
     _, _, test_loader = get_dataloaders(
-        train_df    = test_df,   # dummy — not used
-        val_df      = test_df,   # dummy — not used
+        # dummy not used
+        train_df    = test_df,   
+        # dummy not used
+        val_df      = test_df,
         test_df     = test_df,
         images_dir  = config.IMAGES_DIR,
         use_clahe   = config.USE_CLAHE,
@@ -180,7 +157,7 @@ def main() -> None:
         num_workers = config.NUM_WORKERS,
     )
 
-    # ── Load best checkpoint ──────────────────────────────────────────────────
+    # load best checkpoint 
     best_ckpt = os.path.join(config.CHECKPOINTS_DIR, f"{exp_name}_best.pth")
     if getattr(config, "USE_FAAR", False):
         fw    = _compute_faar_freq_weights(
@@ -196,11 +173,11 @@ def main() -> None:
     print(f"Loaded checkpoint: {best_ckpt}")
     print(f"  (trained to epoch {ckpt.get('epoch', '?')}, val AUC {ckpt.get('val_auc', '?'):.4f})\n")
 
-    # ── Evaluate ──────────────────────────────────────────────────────────────
+    # evaluate results 
     metrics = evaluate_model(model, test_loader, DEVICE, config.DISEASE_LABELS)
     metrics["exp_name"] = exp_name
 
-    # ── Print results table ───────────────────────────────────────────────────
+    # print result table
     print(f"  {'Class':<22} {'Test AUC':>10}")
     print(f"  {'-'*36}")
     for cls, auc in metrics["per_class_auc"].items():
@@ -213,9 +190,7 @@ def main() -> None:
     print(f"  F1 Score  : {metrics['f1']:.4f}")
     print(f"  Threshold : {metrics['threshold']}\n")
 
-    # ── Save outputs ──────────────────────────────────────────────────────────
-
-    # 1. Per-class AUC CSV
+    # save per-class auc as csv
     auc_csv_path = os.path.join(config.METRICS_DIR, f"{exp_name}_test_auc_per_class.csv")
     auc_df = pd.DataFrame(
         [{"class": cls, "auc": auc} for cls, auc in metrics["per_class_auc"].items()]
@@ -223,7 +198,7 @@ def main() -> None:
     auc_df.to_csv(auc_csv_path, index=False)
     print(f"Per-class AUC CSV saved : {auc_csv_path}")
 
-    # 2. Test summary metrics CSV
+    # save test summary metrics as csv
     summary_csv_path = os.path.join(config.METRICS_DIR, f"{exp_name}_test_summary.csv")
     pd.DataFrame([{
         "exp_name":  exp_name,
@@ -235,13 +210,13 @@ def main() -> None:
     }]).to_csv(summary_csv_path, index=False)
     print(f"Test summary CSV saved  : {summary_csv_path}")
 
-    # 3. Full metrics JSON
+    # save all test metrics as json
     json_path = os.path.join(config.METRICS_DIR, f"{exp_name}_test_metrics.json")
     with open(json_path, "w") as f:
         json.dump(metrics, f, indent=2)
     print(f"Full metrics JSON saved : {json_path}")
 
-    # 4. Per-class AUC bar chart PNG
+    # save per-class auc chart as png
     bar_chart_path = os.path.join(config.FIGURES_DIR, f"{exp_name}_test_auc_bar.png")
     save_auc_bar_chart(metrics["per_class_auc"], metrics["avg_auc"], bar_chart_path, exp_name)
     print(f"AUC bar chart PNG saved : {bar_chart_path}")
