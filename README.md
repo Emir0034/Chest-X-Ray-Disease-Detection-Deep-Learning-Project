@@ -112,6 +112,7 @@ Switching BCE → ASL in Experiment 09 changes AUC by only −0.0001 while impro
 - **ASL** — substantially improved Recall (+0.0990) and F1 (+0.0774) at near-zero AUC cost
 - **Focal Loss** — did not improve over BCE or ASL in any metric
 - **FAAR** (Frequency-Aware Attention Refinement) — tested in Exp05/05b; did not improve AUC and was dropped
+- **Reference comparison:** Exp08 achieved higher AUC than a referenced recent study in 12/14 disease classes, including 4/5 difficult classes. This is treated as a reference comparison only because evaluation protocols may differ.
 
 ---
 
@@ -119,7 +120,7 @@ Switching BCE → ASL in Experiment 09 changes AUC by only −0.0001 while impro
 
 Grad-CAM visualizations were generated for selected positive test examples to inspect model behavior qualitatively. For a Hernia example, Experiment 09 (ASL) produced a broader activation region with predicted probability 0.33, while Experiment 08 predicted 0.04 — consistent with the higher recall-oriented behavior of ASL.
 
-> **Important:** Grad-CAM is used for qualitative inspection only. It is **not** localization proof. The NIH ChestX-ray14 dataset provides image-level labels only, with no bounding box annotations. Heatmap activations cannot be validated against ground-truth disease locations.
+Grad-CAM is used for qualitative inspection only. It is not localization proof. The NIH ChestX-ray14 dataset provides image-level labels only, with no bounding box annotations. Heatmap activations cannot be validated against ground-truth disease locations.
 
 ---
 
@@ -129,7 +130,7 @@ Grad-CAM visualizations were generated for selected positive test examples to in
 ├── config.py                   # All hyperparameters, flags, experiment naming
 ├── train.py                    # Training loop with AMP, early stopping, checkpointing
 ├── evaluate.py                 # Test-set evaluation and metric export
-├── model.py                    # DenseNet121 + optional CBAM + optional FAAR
+├── model.py                    # DenseNet121 + optional CBAM + optional FAAR   
 ├── dataset.py                  # NIH dataset loading, patient-level splits
 ├── loss.py                     # AsymmetricLoss, FocalLoss, BCE wrapper
 ├── transforms.py               # CLAHE, train/val augmentation pipelines

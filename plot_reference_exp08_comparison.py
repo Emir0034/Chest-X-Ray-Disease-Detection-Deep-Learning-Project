@@ -111,7 +111,7 @@ ax.set_yticklabels(df["disease"], fontsize=10)
 ax.set_xlabel("AUC", fontsize=11)
 ax.set_xlim(0.60, 1.02)
 ax.set_title(
-    "Per-Class AUC: Referenced Study vs. Exp08 (CBAM block34 + BCE + AdamW)",
+    "Per-Class AUC: Referenced Study vs. Exp08",
     fontsize=12, fontweight="bold", pad=14,
 )
 ax.xaxis.grid(True, linestyle="--", alpha=0.35)
