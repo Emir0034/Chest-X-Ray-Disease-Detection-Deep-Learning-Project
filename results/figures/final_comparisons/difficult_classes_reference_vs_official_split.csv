@@ -1,0 +1,6 @@
+disease,referenced_study_auc,exp08_official_split_auc,absolute_difference,relative_difference_percent,difficult_class
+Infiltration,0.6831,0.7015,0.0184,2.7,True
+Pneumonia,0.7042,0.7193,0.0151,2.14,True
+Consolidation,0.7458,0.7399,-0.0059,-0.79,True
+Nodule,0.7697,0.7441,-0.0256,-3.33,True
+Pleural_Thickening,0.7707,0.7705,-0.0002,-0.03,True

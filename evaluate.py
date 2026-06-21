@@ -10,7 +10,7 @@ import torch
 from sklearn.metrics import f1_score, precision_score, recall_score, roc_auc_score
 
 import config
-from dataset import create_patient_splits, get_dataloaders
+from dataset import get_dataloaders, load_splits
 from model import build_model
 from utils import compute_auc_per_class, load_checkpoint
 
@@ -140,11 +140,7 @@ def main() -> None:
     os.makedirs(config.FIGURES_DIR, exist_ok=True)
 
     # Load splits
-    train_df, _, test_df = create_patient_splits(
-        csv_path  = config.DATA_CSV,
-        split_dir = config.SPLIT_DIR,
-        seed      = config.SEED,
-    )
+    train_df, _, test_df = load_splits(config)
     _, _, test_loader = get_dataloaders(
         # dummy not used
         train_df    = test_df,   

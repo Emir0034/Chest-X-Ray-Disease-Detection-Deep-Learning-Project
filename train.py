@@ -8,7 +8,7 @@ from sklearn.metrics import roc_auc_score
 from tqdm import tqdm
 
 import config
-from dataset import create_patient_splits, get_dataloaders
+from dataset import get_dataloaders, load_splits
 from loss import get_loss_fn
 from model import build_model
 from utils import (
@@ -181,11 +181,7 @@ def main() -> None:
     print(f"{'='*60}\n")
 
     # Dataset
-    train_df, val_df, test_df = create_patient_splits(
-        csv_path   = config.DATA_CSV,
-        split_dir  = config.SPLIT_DIR,
-        seed       = config.SEED,
-    )
+    train_df, val_df, test_df = load_splits(config)
     train_loader, val_loader, _ = get_dataloaders(
         train_df    = train_df,
         val_df      = val_df,

@@ -87,6 +87,99 @@ def create_patient_splits(
     return train_df, val_df, test_df
 
 
+# Read a NIH split list file (one image filename per line) into a set
+def _read_image_list(list_path: str) -> set:
+    with open(list_path, "r") as f:
+        return {line.strip() for line in f if line.strip()}
+
+
+# Create or load splits based on the official NIH train_val_list.txt / test_list.txt
+# test_list.txt -> test set
+# train_val_list.txt -> patient-level split into train (90%) / val (10%)
+def create_official_nih_splits(
+    csv_path: str,
+    train_val_list: str,
+    test_list: str,
+    split_dir: str,
+    val_ratio: float = 0.10,
+    seed: int = 42,
+) -> tuple:
+
+    train_path = os.path.join(split_dir, "train_split.csv")
+    val_path   = os.path.join(split_dir, "val_split.csv")
+    test_path  = os.path.join(split_dir, "test_split.csv")
+
+    # Load existing official splits if available
+    if os.path.exists(train_path) and os.path.exists(val_path) and os.path.exists(test_path):
+        print(f"[dataset] Loading existing official NIH splits from {split_dir}")
+        return (
+            pd.read_csv(train_path),
+            pd.read_csv(val_path),
+            pd.read_csv(test_path),
+        )
+
+    print(f"[dataset] Creating new official NIH splits from {csv_path}")
+    df = pd.read_csv(csv_path)
+    df["_pid"] = df["Patient ID"].astype(str) if "Patient ID" in df.columns else df["Image Index"].apply(extract_patient_id)
+
+    train_val_images = _read_image_list(train_val_list)
+    test_images      = _read_image_list(test_list)
+
+    train_val_df = df[df["Image Index"].isin(train_val_images)].reset_index(drop=True)
+    test_df_full = df[df["Image Index"].isin(test_images)].reset_index(drop=True)
+
+    # Patient-level 90/10 split of train_val into train/val
+    unique_patients = sorted(train_val_df["_pid"].unique())
+    rng = np.random.RandomState(seed)
+    rng.shuffle(unique_patients)
+
+    n       = len(unique_patients)
+    n_val   = int(val_ratio * n)
+    val_patients   = set(unique_patients[:n_val])
+    train_patients = set(unique_patients[n_val:])
+    test_patients  = set(test_df_full["_pid"].unique())
+
+    # Leakage checks - train/val/test patient sets must be pairwise disjoint
+    assert train_patients.isdisjoint(val_patients), "Patient leakage between train and val splits"
+    assert (train_patients | val_patients).isdisjoint(test_patients), "Patient leakage between train_val and test splits"
+
+    train_df = train_val_df[train_val_df["_pid"].isin(train_patients)].drop(columns=["_pid"]).reset_index(drop=True)
+    val_df   = train_val_df[train_val_df["_pid"].isin(val_patients)].drop(columns=["_pid"]).reset_index(drop=True)
+    test_df  = test_df_full.drop(columns=["_pid"]).reset_index(drop=True)
+
+    os.makedirs(split_dir, exist_ok=True)
+    train_df.to_csv(train_path, index=False)
+    val_df.to_csv(val_path,     index=False)
+    test_df.to_csv(test_path,   index=False)
+
+    print(
+        f"[dataset] Official NIH split complete — "
+        f"train: {len(train_df)} images / {len(train_patients)} patients, "
+        f"val: {len(val_df)} images / {len(val_patients)} patients, "
+        f"test: {len(test_df)} images / {len(test_patients)} patients"
+    )
+    print("[dataset] Verified: no patient overlap between train/val/test")
+    return train_df, val_df, test_df
+
+
+# Dispatch to the configured split mode and return (train_df, val_df, test_df)
+def load_splits(cfg) -> tuple:
+    if getattr(cfg, "SPLIT_MODE", "custom") == "official_nih":
+        return create_official_nih_splits(
+            csv_path       = cfg.DATA_CSV,
+            train_val_list = cfg.NIH_TRAIN_VAL_LIST,
+            test_list      = cfg.NIH_TEST_LIST,
+            split_dir      = cfg.OFFICIAL_SPLIT_DIR,
+            val_ratio      = cfg.OFFICIAL_VAL_RATIO,
+            seed           = cfg.SEED,
+        )
+    return create_patient_splits(
+        csv_path  = cfg.DATA_CSV,
+        split_dir = cfg.SPLIT_DIR,
+        seed      = cfg.SEED,
+    )
+
+
 # Store all file paths in a dict for fast access O(1)
 def _build_path_index(images_dir: str) -> dict:
 

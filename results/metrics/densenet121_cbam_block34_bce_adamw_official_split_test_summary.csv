@@ -1,0 +1,2 @@
+exp_name,avg_auc,precision,recall,f1,threshold
+densenet121_cbam_block34_bce_adamw_official_split,0.8062711221365297,0.4177563654313814,0.1276632524697296,0.1802294247100237,0.5
