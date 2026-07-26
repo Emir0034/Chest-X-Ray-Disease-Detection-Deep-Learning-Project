@@ -23,7 +23,8 @@ The primary metric is Mean Test AUC (macro-average ROC-AUC over all 14 disease c
 
 - **Labels:** Atelectasis, Cardiomegaly, Effusion, Infiltration, Mass, Nodule, Pneumonia, Pneumothorax, Consolidation, Edema, Emphysema, Fibrosis, Pleural_Thickening, Hernia
 - **Task:** Multi-label classification — a single image can show multiple diseases simultaneously
-- **Split:** Patient-level 70% train / 15% validation / 15% test (no patient appears in more than one split)
+- **Primary split:** Patient-level 70% train / 15% validation / 15% test (no patient appears in more than one split)
+- **Official split validation:** The best-performing model (Exp08) was additionally evaluated using the official NIH ChestX-ray14 split for comparison with the reference study.
 - **Label type:** Image-level only; no bounding box annotations
 
 Download from [NIH Clinical Center](https://nihcc.app.box.com/v/ChestXray-NIHCC) and place images under `data/NIH Chest X-rays/`. The label CSV (`Data_Entry_2017.csv`) should also be placed there.
@@ -68,7 +69,7 @@ Convolutional Block Attention Module (CBAM) applies sequential channel and spati
 
 ## Main Experiments
 
-All values are Mean Test AUC and threshold-0.5 metrics from the held-out test split.
+All values below are from the primary patient-level 70/15/15 split. A separate evaluation using the official NIH ChestX-ray14 split is reported in the Official Split Validation section.
 
 | Exp | Configuration | AUC | Precision | Recall | F1 |
 |-----|--------------|-----|-----------|--------|-----|
@@ -104,6 +105,31 @@ Switching BCE → ASL in Experiment 09 changes AUC by only −0.0001 while impro
 
 ---
 
+## Official Split Validation
+
+To assess whether the best configuration generalizes beyond the primary 70/15/15 patient-level split, Experiment 08 was additionally evaluated using the official NIH ChestX-ray14 split.
+
+### Overall Comparison
+
+| Model | Evaluation Split | Mean AUC |
+|------|------------------|---------:|
+| Reference study | Official NIH split | 0.8045 |
+| **Exp08 — CBAM block34 + BCE + AdamW** | **Official NIH split** | **0.8063** |
+
+Exp08 achieved a Mean AUC of **0.8063**, slightly higher than the **0.8045** reported by the reference study under the official split protocol.
+
+### Per-Class Comparison
+
+On the official NIH split:
+
+- Exp08 achieved higher AUC in **7 of 14 disease classes** compared with the reference study.
+- Among the five difficult classes analyzed separately, Exp08 achieved higher AUC in **3 of 5 classes**.
+- The overall Mean AUC remained competitive with the reference result, suggesting that the performance of the selected CBAM block34 + BCE + AdamW configuration was not limited to the custom 70/15/15 split.
+
+The official-split evaluation is reported separately from the primary experiments because results obtained under different data splits should not be directly compared as if they came from the same test set.
+
+---
+
 ## Main Findings
 
 - **CBAM placement** — block34 was the best: block34 (0.8359) > block1234 (0.8343) > block4 (0.8323)
@@ -112,7 +138,7 @@ Switching BCE → ASL in Experiment 09 changes AUC by only −0.0001 while impro
 - **ASL** — substantially improved Recall (+0.0990) and F1 (+0.0774) at near-zero AUC cost
 - **Focal Loss** — did not improve over BCE or ASL in any metric
 - **FAAR** (Frequency-Aware Attention Refinement) — tested in Exp05/05b; did not improve AUC and was dropped
-- **Reference comparison:** Exp08 achieved higher AUC than a referenced recent study in 12/14 disease classes, including 4/5 difficult classes. This is treated as a reference comparison only because evaluation protocols may differ.
+- **Official split validation** — Exp08 achieved a Mean AUC of **0.8063** compared with **0.8045** in the reference study, with higher per-class AUC in **7/14 classes** and **3/5 difficult classes**
 
 ---
 
