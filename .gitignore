@@ -60,3 +60,6 @@ report/
 LaTeXAuthor_Guidelines_for_Proceedings.pdf
 report.zip
 CHANGES.md
+
+poster/*
+!poster/final_poster.png
