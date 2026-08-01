@@ -10,10 +10,6 @@ Multi-label classification of 14 chest diseases from frontal X-ray images using 
   </a>
 </p>
 
-<p align="center">
-  <em>Project poster — click the image to view it in full resolution.</em>
-</p>
-
 ---
 
 ## Project Overview
