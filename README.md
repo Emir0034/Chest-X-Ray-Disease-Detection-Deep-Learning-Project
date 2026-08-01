@@ -2,6 +2,18 @@
 
 Multi-label classification of 14 chest diseases from frontal X-ray images using DenseNet121 on the NIH ChestX-ray14 dataset. Systematic ablation over CLAHE preprocessing, CBAM attention placement, loss functions (BCE, ASL, Focal Loss), and optimizers (Adam, AdamW).
 
+<p align="center">
+  <a href="poster/poster.png">
+    <img src="poster/poster.png"
+         alt="Chest X-Ray Disease Detection Project Poster"
+         width="100%">
+  </a>
+</p>
+
+<p align="center">
+  <em>Project poster — click the image to view it in full resolution.</em>
+</p>
+
 ---
 
 ## Project Overview
